@@ -53,12 +53,20 @@ function injectElements() {
 		
 	var chkBox = document.createElement('div');
 		chkBox.innerHTML = '<div class="square pushbully-chk-box"><i class="push-check"></i></div>';
-		chkBox.className = "checkbox checked pushbully-chk";
-		chkBox.checked = true;
-		btnSelectAll.insertAdjacentElement('afterEnd',chkBox);
+		chkBox.className = "checkbox pushbully-chk";
+		chkBox.checked = false;
+		//btnSelectAll.insertAdjacentElement('afterEnd',chkBox); //just for testing
 		chkBox.addEventListener('click',chkBox_Click,false);
 		
 		log("Check box injected");
+		
+	var pushes = getAllPushes();
+	
+	if(pushes.length) { 
+		for (i = 0; i < pushes.length; i++) {
+			pushes[i].getElementsByClassName("push-close pointer")[0].insertAdjacentElement("afterEnd",chkBox);//.cloneNode(true));
+		}
+	}
 }
 
 function deleteAll_Click() {
@@ -72,27 +80,42 @@ function deleteAll_Click() {
 function selectAll_Click() {
 	log("Select all button clicked");
 	
-	selectAll();
+	if(this.innerHTML === "Select 50") {
+		this.innerHTML = "Deselect All";
+		
+		selectAll();
+	} else {
+		this.innerHTML = "Select 50";
+		
+		deselectAll();
+	}
 }
 
-function chkBox_Click(){
+function chkBox_Click() {
 	log("Checkbox clicked");
 	
-	this.style="background-color:red;";
+	if(this.className.indexOf("checked") > -1) {
+		this.className = "checkbox pushbully-chk";
+	} else {
+		this.className = "checkbox checked pushbully-chk";
+	}
+
 }
 
 function deleteSelected_Click(){
 	log("Delete Selected button clicked");
-	this.innerHTML = "NO!";
+
+}
+
+function getAllPushes(){
+	return document.body.getElementsByClassName("push");
 }
 
 function deleteAll(prompt) {
-	var pushes = document.body.getElementsByClassName("push");
+	var pushes = getAllPushes();
 	 
 	if(!pushes.length) {
 		log("Deleted "+deleteCounter+" pushes. No more pushes to delete");
-		
-		//if(deleteCounter > 6) { alert("Deleted "+deleteCounter+" pushes, saving you an average of " + (deleteCounter/2) + " seconds."); }
 		
 		return 0;
 	 }
@@ -140,6 +163,12 @@ function deleteAll(prompt) {
 }
 
 function selectAll() {
+	log("Selecting all");
+
+}
+
+function deselectAll() {
+	log("Deselecting all");
 
 }
 
