@@ -1,9 +1,15 @@
 var deleteCounter = 0;
 var inProgress = false;
+var chkBox = document.createElement('div');
 
 main();
 
 function main() {
+	chkBox.innerHTML = '<div class="square pushbully-chk-box"><i class="push-check pushbullet-mark" /></div>';
+	chkBox.className = "checkbox pushbully-chk";
+
+	chkBox.checked = false;
+
 	if (injectButtons()) {
 		injectBoxes();
 	}
@@ -30,7 +36,7 @@ function injectButtons() {
 		pushDiv.insertAdjacentElement('afterEnd', divButtons);
 	log("Button box injected");
 
-	var btnClassName = "button btn hover-red pushbully-button";
+	var btnClassName = "button btn pushbully-button";
 
 	var btnDeleteAll = document.createElement('button');
 		btnDeleteAll.innerHTML = 'Delete All Pushes';
@@ -72,13 +78,31 @@ function injectButtons() {
 		btnRefreshBoxes.addEventListener('click', refreshBoxes_Click, false);
 	log("Refresh Boxes Button injected");
 	
-	//document.getElementById("pushes-list").addEventListener("DOMNodeInserted", injectBoxes, false);
-	//log("Attached event listener to pushes-list");
+	document.getElementById("pushes-list").addEventListener("DOMNodeInserted", onNodeInserted, false);
+	log("Attached event listener to pushes-list");
 	//They work, but I'm not ready for the ramifications yet (need to optimize it / maybe choose another way to do this...)
 
 	inProgress = false;
 	
 	return true;
+}
+
+function onNodeInserted(event) {
+	if(event.target.className !== "panel") { return; }
+	
+	propogateBoxes();
+	
+	addBoxToPush(event.target.parentElement);
+}
+
+function propogateBoxes() {
+	//Put the first box second, second box third, etc.
+}
+
+function addBoxToPush(push) {
+	var newChkBox = push.getElementsByClassName("push-close pointer")[0].insertAdjacentElement("afterEnd", chkBox.cloneNode(true));
+
+	newChkBox.addEventListener('click', chkBox_Click, false);
 }
 
 function refreshBoxes_Click(){
@@ -94,13 +118,7 @@ function injectBoxes() {
 	
 	log("Injecting checkboxes");
 	
-	deleteCheckboxes();
-
-	var chkBox = document.createElement('div');
-	chkBox.innerHTML = '<div class="square pushbully-chk-box"><i class="push-check pushbullet-mark" /></div>';
-	chkBox.className = "checkbox pushbully-chk";
-
-	chkBox.checked = false;
+	deleteCheckboxes();	
 
 	var pushes = getAllPushes();
 
@@ -111,13 +129,11 @@ function injectBoxes() {
 	}
 	
 	for (i = 0; i < pushes.length; i++) {
-		var newChkBox = pushes[i].getElementsByClassName("push-close pointer")[0].insertAdjacentElement("afterEnd", chkBox.cloneNode(true));
-
-		newChkBox.addEventListener('click', chkBox_Click, false);
+		addBoxToPush(pushes[i]);
 	}
 	
-	document.getElementsByClassName("select-all-button")[0].innerHTML = "Select 50";
-
+	resetSAButton();
+	
 	log("Checkboxes injected");
 	
 	inProgress = false;
@@ -141,9 +157,9 @@ function selectAll_Click() {
 	log("Select all button clicked");
 
 	if (this.innerHTML === "Select 50") { //Select "all"
-		selectAll(this, true);
+		selectAll(true);
 	} else { //Deselect all
-		selectAll(this, false);
+		selectAll(false);
 	}
 	
 	inProgress = false;
@@ -175,6 +191,14 @@ function deleteSelected_Click() {
 	inProgress = false;
 }
 
+function resetSAButton(deselect) { 
+	deselect = deselect || false;
+
+	var btn = document.getElementsByClassName("select-all-button")[0];
+
+	btn.innerHTML = (deselect ? "Deselect all" : "Select 50");
+}
+
 function deleteCheckboxes() {
 	log("Deleting checkboxes");
 
@@ -187,6 +211,8 @@ function deleteCheckboxes() {
 	for (var i = checkboxes.length - 1; i >= 0; i--) {
 		checkboxes[i].parentElement.removeChild(checkboxes[i]);
 	}
+	
+	resetSAButton();
 }
 
 function getAllCheckboxes(bChecked) {
@@ -256,7 +282,7 @@ function deleteAll(prompt) {
 	}, secsToWait * 1000);
 }
 
-function selectAll(btn, all) {
+function selectAll(all) {
 	if (all) {
 		log("Selecting \"all\" pushes");
 	} else {
@@ -291,7 +317,7 @@ function selectAll(btn, all) {
 	
 	log("Checkboxes toggled");
 
-	btn.innerHTML = (all ? "Deselect all" : "Select 50");
+	resetSAButton(all);
 }
 
 function checkABox(box,val){	
@@ -323,6 +349,8 @@ function deleteSelected() {
 		
 		checkABox(boxes[i],false);
 	}
+	
+	resetSAButton();
 }
 
 function log(text) {
