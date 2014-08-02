@@ -3,10 +3,11 @@ var deleteCounter = 0;
 main();
 
 function main() {
-	injectElements();
+	injectButtons();
+	injectBoxes();
 }
 
-function injectElements() {
+function injectButtons() {
 	log("Checking if we should inject");
 
 	var pushDiv = document.querySelector('div[class="pushframe"]');
@@ -50,27 +51,38 @@ function injectElements() {
 		btnDeleteSelected.addEventListener('click',deleteSelected_Click,false);
 		
 		log("Delete Selected Button injected");
-		
+}
+
+function injectBoxes() {
+	log("Injecting checkboxes");
+
 	var chkBox = document.createElement('div');
 		chkBox.innerHTML = '<div class="square pushbully-chk-box"><i class="push-check"></i></div>';
 		chkBox.className = "checkbox pushbully-chk";
-		chkBox.checked = false;
-		//btnSelectAll.insertAdjacentElement('afterEnd',chkBox); //just for testing
-		chkBox.addEventListener('click',chkBox_Click,false);
 		
-		log("Check box injected");
+		chkBox.checked = false;
 		
 	var pushes = getAllPushes();
 	
 	if(pushes.length) { 
 		for (i = 0; i < pushes.length; i++) {
-			pushes[i].getElementsByClassName("push-close pointer")[0].insertAdjacentElement("afterEnd",chkBox);//.cloneNode(true));
+			var newChkBox =
+				pushes[i].getElementsByClassName("push-close pointer")[0]
+				.insertAdjacentElement("afterEnd",chkBox.cloneNode(true));
+				
+			newChkBox.addEventListener('click',chkBox_Click,false);	
 		}
+		
+		log("Checkboxes injected");
+	} else {
+		log("No pushes on which to inject checkboxes");
 	}
 }
 
 function deleteAll_Click() {
 	log("Delete all button clicked");
+	
+	deleteCheckboxes();
 	
 	deleteCounter = 0;
 	
@@ -80,31 +92,45 @@ function deleteAll_Click() {
 function selectAll_Click() {
 	log("Select all button clicked");
 	
-	if(this.innerHTML === "Select 50") {
+	if(this.innerHTML === "Select 50") { //Select "all"
 		this.innerHTML = "Deselect All";
 		
-		selectAll();
-	} else {
+		selectAll(true);
+	} else { //Deselect all
 		this.innerHTML = "Select 50";
 		
-		deselectAll();
+		selectAll(false);
 	}
 }
 
-function chkBox_Click() {
-	log("Checkbox clicked");
-	
-	if(this.className.indexOf("checked") > -1) {
+function chkBox_Click() {	
+	if(this.checked) {
 		this.className = "checkbox pushbully-chk";
+		this.checked = false;
 	} else {
 		this.className = "checkbox checked pushbully-chk";
+		this.checked = true;
 	}
 
+	log("Checkbox toggled " + (this.checked ? "on" : "off"));
 }
 
 function deleteSelected_Click(){
 	log("Delete Selected button clicked");
+	
+	deleteCheckboxes();
 
+	
+}
+
+function deleteCheckboxes() {
+	var checkboxes = document.box.getElementsByClassName("pushbully-chk");
+	
+	if(!checkboxes.length) { return; }
+	
+	for(int i = 0; i < checkboxes.length; i++) {
+		checkboxes[i].parentElement.removeChild(checkboxes[i]);
+	}
 }
 
 function getAllPushes(){
@@ -157,19 +183,31 @@ function deleteAll(prompt) {
 	
 	var secsToWait = 3;
 	
-	log("Waiting "+secsToWait+" seconds")
+	log("Waiting " + secsToWait + " seconds")
 	
 	window.setTimeout(function(){deleteAll(false)},secsToWait*1000);
 }
 
-function selectAll() {
-	log("Selecting all");
+function selectAll(all) {
+	var pushes = getAllPushes();
+	
+	var newClassName = (all ? "checkbox checked pushbully-chk" : "checkbox pushbully-chk");
 
-}
-
-function deselectAll() {
-	log("Deselecting all");
-
+	if(all) { log("Selecting \"all\" pushes");} 
+	else { log("Deselecting all pushes");}
+	
+	if(pushes.length) { 
+		for (i = 0; i < pushes.length; i++) {
+			var element = pushes[i].getElementsByClassName("pushbully-chk")[0];
+			
+			element.checked = all;
+			element.className = newClassName;		
+		}
+	
+		log("Checkboxes toggled");
+	} else {
+		log("No pushes on which to toggle checkboxes");
+	}
 }
 
 function log(text) {

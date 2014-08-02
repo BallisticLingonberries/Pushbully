@@ -7,11 +7,12 @@
 	padding: 5px 10px 5px !important;
 }
 
+div .push {
+	width:645px !important;
+}
+
 .pushbully-chk {
-	position:absolute !important;
-	right:10px !important;
-	top:0px !important;
-	margin:1px !important;
+
 }
 
 .checked .pushbully-chk-box {
