@@ -128,7 +128,7 @@ function deleteCheckboxes() {
 	
 	if(!checkboxes.length) { return; }
 	
-	for(int i = 0; i < checkboxes.length; i++) {
+	for(var i = 0; i < checkboxes.length; i++) {
 		checkboxes[i].parentElement.removeChild(checkboxes[i]);
 	}
 }
