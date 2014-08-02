@@ -244,6 +244,8 @@ function deleteAll(prompt) {
 
 		deleteCounter++;
 	}
+	
+	log("Deletion progress: " + deleteCounter);
 
 	var secsToWait = 3;
 
