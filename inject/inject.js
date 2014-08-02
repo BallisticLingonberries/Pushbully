@@ -1,4 +1,5 @@
 var deleteCounter = 0;
+var inProgress = false;
 
 main();
 
@@ -9,6 +10,8 @@ function main() {
 }
 
 function injectButtons() {
+	inProgress = true;
+
 	log("Checking if we should inject");
 
 	var pushDiv = document.querySelector('div[class="pushframe"]');
@@ -68,7 +71,13 @@ function injectButtons() {
 		
 		btnRefreshBoxes.addEventListener('click', refreshBoxes_Click, false);
 	log("Refresh Boxes Button injected");
+	
+	//document.getElementById("pushes-list").addEventListener("DOMNodeInserted", injectBoxes, false);
+	//log("Attached event listener to pushes-list");
+	//They work, but I'm not ready for the ramifications yet (need to optimize it / maybe choose another way to do this...)
 
+	inProgress = false;
+	
 	return true;
 }
 
@@ -79,6 +88,10 @@ function refreshBoxes_Click(){
 }
 
 function injectBoxes() {
+	if(inProgress) { return; }
+	
+	inProgress = true;
+	
 	log("Injecting checkboxes");
 	
 	deleteCheckboxes();
@@ -106,17 +119,25 @@ function injectBoxes() {
 	document.getElementsByClassName("select-all-button")[0].innerHTML = "Select 50";
 
 	log("Checkboxes injected");
+	
+	inProgress = false;
 }
 
 function deleteAll_Click() {
+	inProgress = true;
+
 	log("Delete all button clicked");
 
 	deleteCounter = 0;
 
 	deleteAll(true);
+	
+	inProgress = false;
 }
 
 function selectAll_Click() {
+	inProgress = true;
+	
 	log("Select all button clicked");
 
 	if (this.innerHTML === "Select 50") { //Select "all"
@@ -124,15 +145,23 @@ function selectAll_Click() {
 	} else { //Deselect all
 		selectAll(this, false);
 	}
+	
+	inProgress = false;
 }
 
 function chkBox_Click() {
+	inProgress = true;
+	
 	checkABox(this,!this.checked);
 	
 	log("Checkbox toggled " + (this.checked ? "on" : "off"));
+	
+	inProgress = false;
 }
 
 function deleteSelected_Click() {
+	inProgress = true;
+
 	log("Delete Selected button clicked");
 
 	deleteCounter = 0;
@@ -142,6 +171,8 @@ function deleteSelected_Click() {
 	if(!getAllPushes().length) {
 		deleteCheckboxes();
 	}
+	
+	inProgress = false;
 }
 
 function deleteCheckboxes() {
@@ -160,7 +191,7 @@ function deleteCheckboxes() {
 
 function getAllCheckboxes(bChecked) {
 	bChecked = bChecked || false;
-	log("bChecked is '" + bChecked + "'");
+	//log("bChecked is '" + bChecked + "'");
 	return document.body.getElementsByClassName((bChecked ? "checked " : "") + "pushbully-chk");
 }
 
@@ -277,7 +308,7 @@ function deleteSelected() {
 
 		return;
 	}
-
+	
 	for (var i = boxes.length - 1; i >= 0; i--) {
 		log("clicking delete on boxes["+i+"]")
 		
