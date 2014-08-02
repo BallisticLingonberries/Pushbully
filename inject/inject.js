@@ -93,13 +93,9 @@ function selectAll_Click() {
 	log("Select all button clicked");
 	
 	if(this.innerHTML === "Select 50") { //Select "all"
-		this.innerHTML = "Deselect All";
-		
-		selectAll(true);
+		selectAll(this,true);
 	} else { //Deselect all
-		this.innerHTML = "Select 50";
-		
-		selectAll(false);
+		selectAll(this,false);
 	}
 }
 
@@ -124,7 +120,7 @@ function deleteSelected_Click(){
 }
 
 function deleteCheckboxes() {
-	var checkboxes = document.box.getElementsByClassName("pushbully-chk");
+	var checkboxes = document.body.getElementsByClassName("pushbully-chk");
 	
 	if(!checkboxes.length) { return; }
 	
@@ -188,7 +184,7 @@ function deleteAll(prompt) {
 	window.setTimeout(function(){deleteAll(false)},secsToWait*1000);
 }
 
-function selectAll(all) {
+function selectAll(btn,all) {
 	var pushes = getAllPushes();
 	
 	var newClassName = (all ? "checkbox checked pushbully-chk" : "checkbox pushbully-chk");
@@ -196,15 +192,29 @@ function selectAll(all) {
 	if(all) { log("Selecting \"all\" pushes");} 
 	else { log("Deselecting all pushes");}
 	
+	
+	
 	if(pushes.length) { 
+		var changed = false;
+	
 		for (i = 0; i < pushes.length; i++) {
 			var element = pushes[i].getElementsByClassName("pushbully-chk")[0];
+			
+			if(element === null) { continue; }
+			
+			changed = true;
 			
 			element.checked = all;
 			element.className = newClassName;		
 		}
-	
-		log("Checkboxes toggled");
+		
+		if(changed) {
+			log("Checkboxes toggled");
+			
+			btn.innerHTML = (all ? "Deselect all" : "Select 50");
+		} else {
+			
+		}
 	} else {
 		log("No pushes on which to toggle checkboxes");
 	}
