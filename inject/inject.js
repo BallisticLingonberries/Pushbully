@@ -80,7 +80,6 @@ function injectButtons() {
 	
 	document.getElementById("pushes-list").addEventListener("DOMNodeInserted", onNodeInserted, false);
 	log("Attached event listener to pushes-list");
-	//They work, but I'm not ready for the ramifications yet (need to optimize it / maybe choose another way to do this...)
 
 	inProgress = false;
 	
@@ -89,6 +88,7 @@ function injectButtons() {
 
 function onNodeInserted(event) {
 	if(event.target.className !== "panel") { return; }
+	log("Panel added");
 	
 	propogateBoxes();
 	
@@ -96,11 +96,57 @@ function onNodeInserted(event) {
 }
 
 function propogateBoxes() {
-	//Put the first box second, second box third, etc.
+	log("Beginning propagation");
+	//Put the first box second, second box third, etc
+	
+	var pushes = getAllPushes();
+	
+	if(!pushes.length || pushes.length < 2) {
+		log("Pushes: " + pushes.length + ". Propogation not required.");
+		
+		return;
+	}
+	
+	var prevPush;
+	var currPush;
+	var boxFromPrevPush;
+	
+	for (var i = pushes.length - 1; i > 0; i--) {
+		prevPush = pushes [i-1];
+		currPush = pushes[i];
+		
+		boxFromPrevPush = boxFromPush(prevPush);
+		
+		log("Moving checkbox from pushes["+(i-1) + "] to pushes[" +i+"]");
+		
+		if(boxFromPrevPush === null) {
+			log("Checkbox from pushes["+(i-1)+"] is null");
+		}
+		
+		addBoxToPush(currPush,boxFromPrevPush);
+	}
+	
+	log("Propagation finished");
 }
 
-function addBoxToPush(push) {
-	var newChkBox = push.getElementsByClassName("push-close pointer")[0].insertAdjacentElement("afterEnd", chkBox.cloneNode(true));
+function boxFromPush(push) {
+	var elems = push.getElementsByClassName("pushbully-chk");
+	
+	if(!elems.length) { 
+		return null;
+	}	
+	
+	return elems[0];
+}
+
+function addBoxToPush(push, box) {
+	box = box || null;
+	
+	if(box === null) {
+		box = chkBox.cloneNode(true);
+	}
+
+	var newChkBox = push.getElementsByClassName("push-close pointer")[0].insertAdjacentElement("afterEnd", box);
 
 	newChkBox.addEventListener('click', chkBox_Click, false);
 }
