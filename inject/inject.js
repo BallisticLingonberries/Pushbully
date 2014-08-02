@@ -18,10 +18,12 @@ function injectElements() {
 	}
 	
 	log("Push frame found - beginning to inject");
+	
+	var btnClassName = "button btn hover-red pushbully-button";
 
 	var btnDeleteAll = document.createElement('button');
 		btnDeleteAll.innerHTML = 'Delete All Pushes';
-		btnDeleteAll.className = "button btn hover-red delete-all-button";
+		btnDeleteAll.className = btnClassName + " delete-all-button";
 
 		pushDiv.insertAdjacentElement('afterEnd',btnDeleteAll);
 
@@ -31,17 +33,28 @@ function injectElements() {
 		
 	var btnSelectAll = document.createElement('button');
 		btnSelectAll.innerHTML = 'Select 50';
-		btnSelectAll.className = "button btn hover-red select-all-button";
+		btnSelectAll.className = btnClassName + " select-all-button";
 
-		btnDeleteAll.insertAdjacentElement('afterEnd',btnSelectAll);
+		btnDeleteAll.insertAdjacentElement('beforeBegin',btnSelectAll);
 
 		btnSelectAll.addEventListener('click',selectAll_Click,false);
 
 		log("Select All Button injected");
 		
+	var btnDeleteSelected = document.createElement('button');
+		btnDeleteSelected.innerHTML = 'Delete Selected';
+		btnDeleteSelected.className = btnClassName + " delete-selected-button";
+		
+		btnSelectAll.insertAdjacentElement('beforeBegin',btnDeleteSelected);
+		
+		btnDeleteSelected.addEventListener('click',deleteSelected_Click,false);
+		
+		log("Delete Selected Button injected");
+		
 	var chkBox = document.createElement('div');
-		chkBox.innerHTML = '<div class="square"><i class="push-check"></i></div>';
-		chkBox.className = "checkbox";
+		chkBox.innerHTML = '<div class="square pushbully-chk-box"><i class="push-check"></i></div>';
+		chkBox.className = "checkbox checked pushbully-chk";
+		chkBox.checked = true;
 		btnSelectAll.insertAdjacentElement('afterEnd',chkBox);
 		chkBox.addEventListener('click',chkBox_Click,false);
 		
@@ -63,7 +76,14 @@ function selectAll_Click() {
 }
 
 function chkBox_Click(){
+	log("Checkbox clicked");
+	
+	this.style="background-color:red;";
+}
 
+function deleteSelected_Click(){
+	log("Delete Selected button clicked");
+	this.innerHTML = "NO!";
 }
 
 function deleteAll(prompt) {

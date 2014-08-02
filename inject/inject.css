@@ -1,7 +1,15 @@
-.delete-all-button {
+.pushbully-button {
 	float: right !important;
 	margin-right: 0px !important;
  	margin-bottom: 10px !important;
 	margin-top: 0px !important;
 	padding: 5px 10px 5px !important;
+}
+
+.pushbully-chk {
+	float: right !important;
+}
+
+.checked .pushbully-chk-box {
+	background-color: red !important;
 }
