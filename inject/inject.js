@@ -3,35 +3,70 @@ var deleteCounter = 0;
 main();
 
 function main() {
-	log("Starting inject");
+	injectElements();
+}
+
+function injectElements() {
+	log("Checking if we should inject");
 
 	var pushDiv = document.querySelector('div[class="pushframe"]');
 
-	if(pushDiv === null) { return; }
+	if(pushDiv === null) {
+		log("No push frame found - we should not inject");
+	
+		return;
+	}
+	
+	log("Push frame found - beginning to inject");
 
-	var btn = document.createElement('button');
+	var btnDeleteAll = document.createElement('button');
+		btnDeleteAll.innerHTML = 'Delete All Pushes';
+		btnDeleteAll.className = "button btn hover-red delete-all-button";
 
-	btn.innerHTML = 'Delete All Pushes';
-	btn.className = "button btn hover-red delete-all-button";
+		pushDiv.insertAdjacentElement('afterEnd',btnDeleteAll);
 
-	pushDiv.insertAdjacentElement('afterEnd',btn);
+		btnDeleteAll.addEventListener('click',deleteAll_Click,false);
 
-	log("Trying to attach event to button");
+		log("Delete All Button injected");
+		
+	var btnSelectAll = document.createElement('button');
+		btnSelectAll.innerHTML = 'Select 50';
+		btnSelectAll.className = "button btn hover-red select-all-button";
 
-	btn.addEventListener('click',clickHandler,false);
+		btnDeleteAll.insertAdjacentElement('afterEnd',btnSelectAll);
 
-	log("Click event attached to button");
+		btnSelectAll.addEventListener('click',selectAll_Click,false);
+
+		log("Select All Button injected");
+		
+	var chkBox = document.createElement('div');
+		chkBox.innerHTML = '<div class="square"><i class="push-check"></i></div>';
+		chkBox.className = "checkbox";
+		btnSelectAll.insertAdjacentElement('afterEnd',chkBox);
+		chkBox.addEventListener('click',chkBox_Click,false);
+		
+		log("Check box injected");
 }
 
-function clickHandler() {
+function deleteAll_Click() {
 	log("Delete all button clicked");
 	
 	deleteCounter = 0;
 	
-	doDelete(true);
+	deleteAll(true);
 }
 
-function doDelete(prompt) {
+function selectAll_Click() {
+	log("Select all button clicked");
+	
+	selectAll();
+}
+
+function chkBox_Click(){
+
+}
+
+function deleteAll(prompt) {
 	var pushes = document.body.getElementsByClassName("push");
 	 
 	if(!pushes.length) {
@@ -81,7 +116,11 @@ function doDelete(prompt) {
 	
 	log("Waiting "+secsToWait+" seconds")
 	
-	window.setTimeout(function(){doDelete(false)},secsToWait*1000);
+	window.setTimeout(function(){deleteAll(false)},secsToWait*1000);
+}
+
+function selectAll() {
+
 }
 
 function log(text) {
