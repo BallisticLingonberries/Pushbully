@@ -32,6 +32,7 @@ function injectButtons() {
 	var btnDeleteAll = document.createElement('button');
 		btnDeleteAll.innerHTML = 'Delete All Pushes';
 		btnDeleteAll.className = btnClassName + " delete-all-button";
+		btnDeleteAll.title = "Click to delete all of your pushes.";
 		
 		divButtons.appendChild(btnDeleteAll);
 
@@ -41,6 +42,7 @@ function injectButtons() {
 	var btnSelectAll = document.createElement('button');
 		btnSelectAll.innerHTML = 'Select 50';
 		btnSelectAll.className = btnClassName + " select-all-button";
+		btnSelectAll.title = "Click to select all pushes on the first page.";
 
 		btnDeleteAll.insertAdjacentElement('beforeBegin', btnSelectAll);
 
@@ -50,6 +52,7 @@ function injectButtons() {
 	var btnDeleteSelected = document.createElement('button');
 		btnDeleteSelected.innerHTML = 'Delete Selected';
 		btnDeleteSelected.className = btnClassName + " delete-selected-button";
+		btnDeleteSelected.title = "Click to delete all of the pushes you have selected.";
 
 		btnSelectAll.insertAdjacentElement('beforeBegin', btnDeleteSelected);
 
@@ -59,6 +62,7 @@ function injectButtons() {
 	var btnRefreshBoxes = document.createElement('button');
 		btnRefreshBoxes.innerHTML = 'Refresh Boxes';
 		btnRefreshBoxes.className = btnClassName + " refresh-boxes-button";
+		btnRefreshBoxes.title = "Sometimes pushes won't have checkboxes on them. Click this to fix that.";
 		
 		btnDeleteAll.insertAdjacentElement('afterEnd',btnRefreshBoxes);
 		
@@ -80,7 +84,7 @@ function injectBoxes() {
 	deleteCheckboxes();
 
 	var chkBox = document.createElement('div');
-	chkBox.innerHTML = '<div class="square pushbully-chk-box"><i class="push-check"></i></div>';
+	chkBox.innerHTML = '<div class="square pushbully-chk-box"><i class="push-check pushbullet-mark" /></div>';
 	chkBox.className = "checkbox pushbully-chk";
 
 	chkBox.checked = false;
@@ -98,6 +102,8 @@ function injectBoxes() {
 
 		newChkBox.addEventListener('click', chkBox_Click, false);
 	}
+	
+	document.getElementsByClassName("select-all-button")[0].innerHTML = "Select 50";
 
 	log("Checkboxes injected");
 }
