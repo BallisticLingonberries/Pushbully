@@ -160,6 +160,17 @@ function deleteElement(elem) {
 
     elem.parentElement.removeChild(elem);
 }
+function deleteChkBoxFromPush(push) {
+    var chks = push.getElementsByClassName(chk.className);
+
+    if (!chks.length) {
+        return false;
+    }
+
+    deleteElement(chks[0]);
+
+    return true;
+}
 
 function onNodeInserted(event) {
     var trgt = event.target;
@@ -431,6 +442,12 @@ function deletePush(push) {
 }
 
 function manualPushDeletionHandler() {
+    log("Push deleted \'manually\'");
+
+    deleteChkBoxFromPush(this.parentNode);
+
+    log("Checkbox closed")
+
     injectBoxes(); //At least until I can think straight.
 }
 
