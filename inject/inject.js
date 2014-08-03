@@ -1,6 +1,6 @@
 var deleteCounter = 0, //How many have we deleted?
     chkBox, //Checkbox template
-    initializing = false; //Are we adding checkboxes?
+    bProcessing = true; //Are we adding checkboxes?
 
 main();
 
@@ -11,7 +11,28 @@ function main() {
 
     injectBoxes();
 
-    document.getElementById("pushes-list").addEventListener("DOMNodeInserted", onNodeInserted, false);
+    var observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            if (mutation.addedNodes) {
+                for (var i = 0; i < mutation.addedNodes.length; i++) {
+                    var node = mutation.addedNodes[i];
+                    if (node.className == "panel") {
+                        log("about to fire mutation event");
+
+                        propogateNewPush(node.parentElement);
+                    }
+                }
+            }
+        });
+    });
+
+    // Start observing "childList" events in document and its descendants
+    observer.observe(document, {
+        childList: true,
+        subtree: true
+    });
+
+    //document.addEventListener("DOMNodeInserted", onNodeInserted, false);
 
     log("Attached event listener to pushes-list");
 }
@@ -86,7 +107,7 @@ function refreshBoxes_Click() {
     injectBoxes();
 }
 function injectBoxes() {
-    initializing = true;
+    bProcessing = true;
 
     log("Injecting checkboxes");
 
@@ -99,7 +120,7 @@ function injectBoxes() {
 
         updateSAButton(false, 0);
 
-        initializing = false
+        bProcessing = false
 
         return;
     }
@@ -107,33 +128,45 @@ function injectBoxes() {
     var currBox, closeButton;
 
     for (i = 0; i < pushes.length; i++) {
+        updateSAButton();
+        log("iteration " + i + ". SAButton text: " + saButtonText());
+
         currBox = addBoxToPush(pushes[i]);
 
         currBox.setAttribute("num", pushes.length - i);
-
         pushes[i].setAttribute("num", pushes.length - i);
 
-        closeButton = pushes[i].getElementsByClassName("push-close")[0];
+        closeButton = closeBtnFromPush(pushes[i]);
 
-        closeButton.removeEventListener('click', manualPushDeletionHandler, false);
-        closeButton.addEventListener('click', manualPushDeletionHandler, false);
+        if (closeButton === null) { //This wouldn't make sense, but whatever...
+            log("Close button was null on pushes[" + i + "]");
 
-        // closeButton.onclick += "manualPushDeletionHandler();";
+            bProcessing = false;
 
-        log("Attached event listener to push-close button");
+            return;
+        }
+
+        evListenAdd(closeButton);
     }
 
-    updateSAButton();
+    updateSAButton(false, pushes.length);
 
     log(pushes.length + " checkboxes injected");
 
-    initializing = false;
+    bProcessing = false;
 }//updates SelectAllButton(select)
+
+function evListenAdd(button) {
+    button.removeEventListener('click', manualPushDeletionHandler, false);
+    button.addEventListener('click', manualPushDeletionHandler, false);
+
+    log("Attached event listener to push-close button");
+}
 
 function deleteAllCheckboxes(bUpdate) {
     bUpdate = bUpdate || true;
 
-    var checkboxes = getAllCheckboxes(false);
+    var checkboxes = getAllCheckboxes();
 
     if (!checkboxes.length) {
         log("No checkboxes to delete");
@@ -143,7 +176,7 @@ function deleteAllCheckboxes(bUpdate) {
 
     log("Deleting " + checkboxes.length + " checkboxes");
 
-    for (var i = 0; i < checkboxes.length; i++) {
+    for (var i = checkboxes.length - 1; i >= 0; i--) {
         deleteElement(checkboxes[i]);
     }
 
@@ -161,7 +194,7 @@ function deleteElement(elem) {
     elem.parentElement.removeChild(elem);
 }
 function deleteChkBoxFromPush(push) {
-    var chks = push.getElementsByClassName(chk.className);
+    var chks = push.getElementsByClassName(chkBox.className);
 
     if (!chks.length) {
         return false;
@@ -175,12 +208,12 @@ function deleteChkBoxFromPush(push) {
 function onNodeInserted(event) {
     var trgt = event.target;
 
-    if (!(trgt.className === "panel" && trgt.parentNode.className === "push")) {
+    if (trgt.className !== "panel") {
         return;
     }
 
-    if (initializing) {
-        log("Node insertion event canceled; initializing === true.");
+    if (bProcessing) {
+        log("Node insertion event canceled; bProcessing === true.");
 
         return;
     }
@@ -190,26 +223,31 @@ function onNodeInserted(event) {
     propogateNewPush(trgt.parentNode);
 }
 function propogateNewPush(newPush) {
-    initializing = true;
+    bProcessing = true;
 
     newPush = newPush || null;
 
     log("Beginning propagation of new push");
 
     var pushes = getAllPushes();
+    var checkedBoxes = getAllCheckboxes(true);
+
+    if (pushes.length < 3 || checkedBoxes.length < 1) {
+        log("Nevermind about the propagation thing. Switching to box injection");
+
+        injectBoxes();
+
+        return;
+    }
 
     var boxPrevPush, boxCurrPush;
 
     for (var i = pushes.length - 1; i >= 0; i--) {
-        if (pushes.length === 1) {
-            boxPrevPush = null;
-        } else {
-            boxPrevPush = boxFromPush(pushes[i - 1]);
-            boxCurrPush = boxFromPush(pushes[i]);
+        boxPrevPush = boxFromPush(pushes[i - 1]);
+        boxCurrPush = boxFromPush(pushes[i]);
 
-            if (boxCurrPush !== null) {
-                deleteElement(boxCurrPush);
-            }
+        if (boxCurrPush !== null) {
+            deleteElement(boxCurrPush);
         }
 
         boxCurrPush = addBoxToPush(pushes[i], boxPrevPush);
@@ -218,13 +256,25 @@ function propogateNewPush(newPush) {
     if (newPush !== null) {
         newPush.setAttribute("num", pushes.length);
         boxCurrPush.setAttribute("num", pushes.length);
+
+        var closeButton = closeBtnFromPush(newPush);
+
+        if (closeButton === null) { //This wouldn't make sense, but whatever...
+            log("Close button was null on pushes[" + i + "]");
+
+            bProcessing = false;
+
+            return;
+        }
+
+        evListenAdd(closeButton);
     }
 
-    updateSAButton(pushes.length);
+    updateSAButton(false, pushes.length);
 
     log("Propagation of new push finished");
 
-    initializing = false;
+    bProcessing = false;
 }//updates SelectAllButton(select, len)
 
 function addBoxToPush(push, box) {
@@ -307,7 +357,7 @@ function selectAll(check) {
 }
 function updateSAButton(deselect, num) {
     deselect = deselect || false;
-    num = num || getAllCheckboxes(false, false).length;
+    num = num || getAllCheckboxes(false).length;
 
     var btn = document.getElementsByClassName("select-all-button")[0];
 
@@ -315,6 +365,9 @@ function updateSAButton(deselect, num) {
     btn.title = (deselect ? "Click to deselect all selected pushes." : "Click to select all pushes on the first page.");
 
     //log("Set Select All Button to \"" + btn.innerHTML + "\"");
+}
+function saButtonText() {
+    return document.getElementsByClassName("select-all-button")[0].innerHTML;
 }
 
 function chkBox_Click() {
@@ -342,6 +395,8 @@ function deleteAll_Click() {
     deleteAll(true);
 }
 function deleteAll(prompt) {
+    bProcessing = true;
+
     var pushes = getAllPushes();
 
     if (!pushes.length) {
@@ -351,6 +406,8 @@ function deleteAll(prompt) {
 
         deleteAllCheckboxes();
 
+        bProcessing = false;
+
         return 0;
     }
 
@@ -359,6 +416,8 @@ function deleteAll(prompt) {
 
         if (!conf) {
             log("Delete all cancelled");
+
+            bProcessing = false;
 
             return 0;
         }
@@ -373,6 +432,10 @@ function deleteAll(prompt) {
     var secsToWait = 3;
 
     log("Deleted " + deleteCounter + " so far. Waiting " + secsToWait + " seconds.");
+
+    window.setTimeout(function () {
+        injectBoxes()
+    }, 1000);
 
     window.setTimeout(function () {
         deleteAll(false)
@@ -398,12 +461,18 @@ function deleteSelected_Click() {
     deleteSelected();
 }
 function deleteSelected() {
+    bProcessing = true;
+
     deleteCounter = 0;
 
-    var boxes = getAllCheckboxes(true, false);
+    var boxes = getAllCheckboxes(true);
+
+    log("boxes length: " + boxes.length);
 
     if (!boxes.length) {
         log("No checked pushes to delete");
+
+        bProcessing = false;
 
         injectBoxes();
 
@@ -411,44 +480,63 @@ function deleteSelected() {
     }
 
     for (var i = boxes.length - 1; i >= 0; i--) {
-        log("clicking delete on boxes[" + i + "]")
+        log("clicking delete on boxes[" + i + "]");
 
-        deletePush(boxes[i].parentNode);
+        deletePush(boxes[i].parentElement);
+        deleteElement(boxes[i]);
     }
 
     log(deleteCounter + " pushes deleted");
 
+    /*
     if (!getAllPushes().length) {
+        deleteAllCheckboxes();
+    } else {*/
+
+    window.setTimeout(function () {
         injectBoxes();
-    } else {
-        updateSAButton();
-    }
+    }, 1000);
+    //}
 
     return deleteCounter;
 }
 
-function deletePush(push) {
+function closeBtnFromPush(push) {
     var elems = push.getElementsByClassName("push-close");
 
     if (!elems.length) {
-        return false;
+        return null;
     }
 
-    elems[0].click();
+    return elems[0];
+}
+
+function deletePush(push) {
+    var btn = closeBtnFromPush(push);
+
+    if (btn === null) {
+        return;
+    }
+
+    btn.click();
 
     deleteCounter++;
 
     return true;
 }
 
-function manualPushDeletionHandler() {
+function manualPushDeletionHandler(event) {
+    if (bProcessing) {
+        log("Not handling push delete because bProcessing === true");
+
+        return;
+    }
+
+    //deleteChkBoxFromPush(event.target.parentElement);
+
     log("Push deleted \'manually\'");
 
-    deleteChkBoxFromPush(this.parentNode);
-
-    log("Checkbox closed")
-
-    injectBoxes(); //At least until I can think straight.
+    //injectBoxes(); //At least until I can think straight.
 }
 
 function log(text) {

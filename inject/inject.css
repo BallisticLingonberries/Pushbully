@@ -1,78 +1,80 @@
 .pushbully-button {
-	position:relative !important;
-	float: right !important;
-	margin-right: 0px !important;
- 	margin-bottom: 10px !important;
-	margin-top: 0px !important;
-	margin-left: 5px !important;
-	padding: 5px 10px 5px !important;
+    position: relative !important;
+    float: right !important;
+    margin-right: 0px !important;
+    margin-bottom: 10px !important;
+    margin-top: 0px !important;
+    margin-left: 5px !important;
+    padding: 5px 10px 5px !important;
 }
 
 .pushbully-button-box {
-	position:relative !important;
-	box-sizing: border-box !important;
-	margin-left: 70px !important;
-	margin-bottom: 5px !important;
-	width: 530px !important;
-	height:30px !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+    margin-left: 70px !important;
+    margin-bottom: 5px !important;
+    width: 530px !important;
+    height: 30px !important;
 }
 
 .btn.refresh-boxes-button {
-	float:left !important;
-	margin-left:0px !important;
+    float: left !important;
+    margin-left: 0px !important;
 }
 
-.btn.refresh-boxes-button:hover {
-	background-color: #3498db !important;
+    .btn.refresh-boxes-button:hover {
+        background-color: #3498db !important;
+    }
+
+.btn.select-all-button:hover {
+    background-color: #9b59b6 !important;
 }
 
-.btn.select-all-button:hover{
-	background-color:#9b59b6 !important;
-}
-
-.btn.delete-all-button:hover{
-	background-color:#e67e22 !important;
+.btn.delete-all-button:hover {
+    background-color: #e67e22 !important;
 }
 
 .btn.delete-selected-button:hover {
-	background-color: red !important;
+    background-color: red !important;
 }
 
 .btn.delete-selected-button {
-	margin-right:0px !important;
+    margin-right: 0px !important;
 }
 
 .push {
-	width:650px !important;
+    width: 650px !important;
 }
 
 .checkbox.pushbully-chk {
-	display: inline-block !important;
-	vertical-align: baseline !important;
-	position: absolute !important;
-	right: 0px !important;
-	top: 15px !important;
+    display: inline-block !important;
+    vertical-align: baseline !important;
+    position: absolute !important;
+    right: 0px !important;
+    top: 15px !important;
 }
 
 div.checkbox.pushbully-chk div {
-	background-color: #bdc3c7 !important;
-}
-div.checkbox.pushbully-chk div i {
-	color: #bdc3c7 !important;
+    background-color: #bdc3c7 !important;
 }
 
-div.checkbox.pushbully-chk div:hover i,
-div.checkbox.checked.pushbully-chk div i {
-	color: #ffffff !important;
-}
+    div.checkbox.pushbully-chk div i {
+        color: #bdc3c7 !important;
+    }
+
+    div.checkbox.pushbully-chk div:hover i,
+    div.checkbox.checked.pushbully-chk div i {
+        color: #ffffff !important;
+    }
 
 div.checkbox.checked.pushbully-chk div {
-	background-color: #e74c3c !important;
-}
-div.checkbox.checked.pushbully-chk div:hover i {
-	color: #e74c3c !important;
+    background-color: #e74c3c !important;
 }
 
+    div.checkbox.checked.pushbully-chk div:hover i {
+        color: #e74c3c !important;
+    }
+
 i.push-close.pointer, i.push-share.pointer {
-	right: 25px !important;
+    right: 25px !important;
 }
