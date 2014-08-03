@@ -1,5 +1,5 @@
 var deleteCounter = 0, //How many have we deleted?
-    chkBox, //Checkbox template
+    chkBox, observer, //Checkbox and observer template
     bProcessing = true; //Are we adding checkboxes?
 
 main();
@@ -11,7 +11,7 @@ function main() {
 
     injectBoxes();
 
-    var observer = new MutationObserver(function (mutations) {
+    observer = new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {
             if (mutation.addedNodes) {
                 for (var i = 0; i < mutation.addedNodes.length; i++) {
@@ -120,16 +120,16 @@ function injectBoxes() {
 
         updateSAButton(false, 0);
 
-        bProcessing = false
+        bProcessing = false;
 
         return;
     }
 
     var currBox, closeButton;
 
-    for (i = 0; i < pushes.length; i++) {
-        updateSAButton();
-        log("iteration " + i + ". SAButton text: " + saButtonText());
+    for (var i = 0; i < pushes.length; i++) {
+        // updateSAButton();
+        // log("iteration " + i + ". SAButton text: " + saButtonText());
 
         currBox = addBoxToPush(pushes[i]);
 
@@ -193,6 +193,7 @@ function deleteElement(elem) {
 
     elem.parentElement.removeChild(elem);
 }
+/*
 function deleteChkBoxFromPush(push) {
     var chks = push.getElementsByClassName(chkBox.className);
 
@@ -204,7 +205,8 @@ function deleteChkBoxFromPush(push) {
 
     return true;
 }
-
+*/
+/*
 function onNodeInserted(event) {
     var trgt = event.target;
 
@@ -221,7 +223,7 @@ function onNodeInserted(event) {
     log("New push received");
 
     propogateNewPush(trgt.parentNode);
-}
+}*/
 function propogateNewPush(newPush) {
     bProcessing = true;
 
@@ -341,7 +343,7 @@ function selectAll(check) {
 
     var changed = 0;
 
-    for (i = boxes.length - 1; i >= 0; i--) {
+    for (var i = boxes.length - 1; i >= 0; i--) {
         if (boxes[i].checked === check) {
             continue;
         }
@@ -366,9 +368,11 @@ function updateSAButton(deselect, num) {
 
     //log("Set Select All Button to \"" + btn.innerHTML + "\"");
 }
+/*
 function saButtonText() {
     return document.getElementsByClassName("select-all-button")[0].innerHTML;
 }
+*/
 
 function chkBox_Click() {
     checkABox(this, !this.checked);
@@ -425,7 +429,7 @@ function deleteAll(prompt) {
         log("Delete all confirmed");
     }
 
-    for (i = pushes.length - 1; i >= 0; i--) {
+    for (var i = pushes.length - 1; i >= 0; i--) {
         deletePush(pushes[i]);
     }
 
@@ -434,11 +438,11 @@ function deleteAll(prompt) {
     log("Deleted " + deleteCounter + " so far. Waiting " + secsToWait + " seconds.");
 
     window.setTimeout(function () {
-        injectBoxes()
+        injectBoxes();
     }, 1000);
 
     window.setTimeout(function () {
-        deleteAll(false)
+        deleteAll(false);
     }, secsToWait * 1000);
 
     return deleteCounter;
@@ -467,7 +471,7 @@ function deleteSelected() {
 
     var boxes = getAllCheckboxes(true);
 
-    log("boxes length: " + boxes.length);
+    //log("boxes length: " + boxes.length);
 
     if (!boxes.length) {
         log("No checked pushes to delete");
@@ -480,7 +484,7 @@ function deleteSelected() {
     }
 
     for (var i = boxes.length - 1; i >= 0; i--) {
-        log("clicking delete on boxes[" + i + "]");
+        // log("clicking delete on boxes[" + i + "]");
 
         deletePush(boxes[i].parentElement);
         deleteElement(boxes[i]);
@@ -525,7 +529,7 @@ function deletePush(push) {
     return true;
 }
 
-function manualPushDeletionHandler(event) {
+function manualPushDeletionHandler() {//event) {
     if (bProcessing) {
         log("Not handling push delete because bProcessing === true");
 
@@ -534,7 +538,7 @@ function manualPushDeletionHandler(event) {
 
     //deleteChkBoxFromPush(event.target.parentElement);
 
-    log("Push deleted \'manually\'");
+    //log("Push deleted \'manually\'");
 
     //injectBoxes(); //At least until I can think straight.
 }
