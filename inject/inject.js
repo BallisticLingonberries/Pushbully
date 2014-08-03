@@ -109,6 +109,51 @@ function injectBoxes() {
     log(pushes.length + " checkboxes injected");
 }
 
+function onNodeInserted(event) {
+    var evPar = event.target.parentElement;
+
+    if (evPar.className !== "push") {
+        return;
+    }
+
+    log("New push received");
+
+    propogateNewPush(evPar);
+}
+function propogateNewPush(newPush) {
+    newPush = newPush || null;
+
+    log("Beginning propagation of new push");
+
+    var pushes = getAllPushes();
+
+    if (pushes.length < 2) {
+        log("Pushes: " + pushes.length + ". Propagation not required.");
+
+        return;
+    }
+
+    var boxPrevPush, boxCurrPush;
+
+    for (var i = pushes.length - 1; i >= 0; i--) {
+        boxPrevPush = boxFromPush(pushes[i - 1]);
+        boxCurrPush = boxFromPush(pushes[i]);
+
+        if (boxCurrPush !== null) {
+            deleteElement(boxCurrPush);
+        }
+
+        addBoxToPush(pushes[i], boxPrevPush);
+    }
+
+    if (newPush !== null) {
+        newPush.setAttribute("num", pushes.length);
+        boxCurrPush.setAttribute("num", pushes.length);
+    }
+
+    log("Propagation of new push finished");
+}
+
 function addBoxToPush(push, box) {
     box = box || null;
 
@@ -182,51 +227,6 @@ function getAllCheckboxes(bChecked) {
     //log("bChecked is '" + bChecked + "'");
 
     return document.body.getElementsByClassName((bChecked ? "checked " : "") + "pushbully-chk");
-}
-
-function onNodeInserted(event) {
-    var evPar = event.target.parentElement;
-
-    if (evPar.className !== "push") {
-        return;
-    }
-
-    log("New push received");
-
-    propogateNewPush(evPar);
-}
-function propogateNewPush(newPush) {
-    newPush = newPush || null;
-
-    log("Beginning propagation of new push");
-
-    var pushes = getAllPushes();
-
-    if (pushes.length < 2) {
-        log("Pushes: " + pushes.length + ". Propagation not required.");
-
-        return;
-    }
-
-    var boxPrevPush, boxCurrPush;
-
-    for (var i = pushes.length - 1; i >= 0; i--) {
-        boxPrevPush = boxFromPush(pushes[i - 1]);
-        boxCurrPush = boxFromPush(pushes[i]);
-
-        if (boxCurrPush !== null) {
-            deleteElement(boxCurrPush);
-        }
-
-        addBoxToPush(pushes[i], boxPrevPush);
-    }
-
-    if (newPush !== null) {
-        newPush.setAttribute("num", pushes.length);
-        boxCurrPush.setAttribute("num", pushes.length);
-    }
-
-    log("Propagation of new push finished");
 }
 
 function selectAll_Click() {
