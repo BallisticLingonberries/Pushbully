@@ -1,22 +1,21 @@
 {
 	"name": "Pushbully: Bulk Delete Pushes",
 	"short_name": "Pushbully",
-	"version": "1.0.0",
+	"version": "1.0.8",
 	"manifest_version": 2,
 	"description": "Pushbully allows you to delete your Pushbullet pushes in bulk.",
 	"icons": {
-        "16": "images/icon_16.png",
-        "48": "images/icon_48.png",
-        "128": "images/icon_128.png"
+        "16": "common/images/icon_16.png",
+        "48": "common/images/icon_48.png",
+        "128": "common/images/icon_128.png"
     },
 	"author":"Karl Tatom",
 	"homepage_url": "https://www.pushbullet.com/",
-	"minimum_chrome_version": "26",
 	"permissions": ["https://www.pushbullet.com/*"],
 	"content_scripts": [{
 		"matches": ["https://www.pushbullet.com/*"],
-		"css": ["inject/inject.css"],
-		"js": ["inject/inject.js"],
+		"css": ["common/inject.css"],
+		"js": ["common/inject.js"],
 		"all_frames": true
 	}]
 }
