@@ -1,15 +1,9 @@
-.pushbully-button {
-    position: relative !important;
-    float: right !important;
-    margin-right: 0px !important;
-    margin-bottom: 10px !important;
-    margin-top: 0px !important;
-    margin-left: 5px !important;
-    padding: 5px 10px 5px !important;
-}
+@charset 'UTF-8';
 
-.pushbully-button-box {
+#pushbully-button-box {
     position: relative !important;
+    -moz-box-sizing: border-box !important;
+    -webkit-box-sizing: border-box !important;
     box-sizing: border-box !important;
     margin-left: 70px !important;
     margin-bottom: 5px !important;
@@ -17,40 +11,51 @@
     height: 30px !important;
 }
 
-.btn.refresh-boxes-button {
-    float: left !important;
-    margin-left: 0px !important;
+.pushbully-button {
+    position: relative !important;
+    float: right !important;
+    margin: 0 0 10px 5px !important;
+    padding: 5px 10px 5px !important;
 }
 
-    .btn.refresh-boxes-button:hover {
+    .pushbully-button:enabled {
+        cursor: pointer;
+    }
+
+    .pushbully-button:disabled {
+        cursor: auto;
+    }
+
+#refresh-boxes-button {
+    float: left !important;
+    margin-left: 0 !important;
+}
+
+    #refresh-boxes-button:hover {
         background-color: #3498db !important;
     }
 
-.btn.select-all-button:hover {
-    background-color: #9b59b6 !important;
-}
-
-.btn.delete-all-button:hover {
+#delete-all-button:hover:enabled {
     background-color: #e67e22 !important;
 }
 
-.btn.delete-selected-button:hover {
-    background-color: red !important;
+#select-all-button:hover:enabled {
+    background-color: #9b59b6 !important;
 }
 
-.btn.delete-selected-button {
-    margin-right: 0px !important;
+#delete-selected-button {
+    margin-right: 0 !important;
 }
 
-.push {
-    width: 650px !important;
-}
+    #delete-selected-button:hover:enabled {
+        background-color: red !important;
+    }
 
 .checkbox.pushbully-chk {
     display: inline-block !important;
     vertical-align: baseline !important;
     position: absolute !important;
-    right: 0px !important;
+    right: 0 !important;
     top: 15px !important;
 }
 
@@ -74,6 +79,10 @@ div.checkbox.checked.pushbully-chk div {
     div.checkbox.checked.pushbully-chk div:hover i {
         color: #e74c3c !important;
     }
+
+.push {
+    width: 650px !important;
+}
 
 i.push-close.pointer, i.push-share.pointer {
     right: 25px !important;
