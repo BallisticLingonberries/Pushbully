@@ -137,7 +137,7 @@ addBoxToPush = function (push, box) {
     if (box === null) {
         box = chkBox.cloneNode(true);
 
-        log('Cloning chkBox due to null');
+        // log('Cloning chkBox due to null');
 
         wire = true;
     }
@@ -152,25 +152,6 @@ addBoxToPush = function (push, box) {
     return newChkBox;
 },
 
-manualPushDeletionHandler = function () {//event) {
-    if (bProcessing) {
-        log('Not handling push delete because bProcessing === true');
-
-        return;
-    }
-
-    log('Push deleted \'manually\'');
-
-    updateSAButton();
-},
-
-evListenAdd = function (button) {
-    button.removeEventListener('click', manualPushDeletionHandler, false);
-    button.addEventListener('click', manualPushDeletionHandler, false);
-
-    log('Attached event listener to push-close button');
-},
-
 injectBoxes = function (bEnsure) {
     bEnsure = bEnsure || false;
 
@@ -182,7 +163,8 @@ injectBoxes = function (bEnsure) {
 
     deleteAllCheckboxes(false);
 
-    var pushes = getAllPushes(), currBox, closeButton, i;
+    var pushes = getAllPushes(), currBox,
+                    closeButton, i, rNum;
 
     if (!pushes.length) {
         log('No pushes on which to inject checkboxes');
@@ -200,6 +182,12 @@ injectBoxes = function (bEnsure) {
         closeButton = closeBtnFromPush(pushes[i]);
 
         evListenAdd(closeButton);
+
+        rNum = Math.random().toString();
+
+        currBox.setAttribute("num", rNum);
+        pushes[i].setAttribute("num", rNum);
+
     }
 
     log(pushes.length + ' checkboxes injected');
@@ -209,6 +197,27 @@ injectBoxes = function (bEnsure) {
     obObserve();
 
     updateSAButton();
+},
+
+manualPushDeletionHandler = function () {//event) {
+    if (bProcessing) {
+        log('Not handling push delete because bProcessing === true');
+
+        return;
+    }
+
+    log('Push deleted \'manually\'');
+
+    //propogatePushList(this.parentElement, true);
+
+    window.setTimeout(injectBoxes, 500);
+},
+
+evListenAdd = function (button) {
+    button.removeEventListener('click', manualPushDeletionHandler, false);
+    button.addEventListener('click', manualPushDeletionHandler, false);
+
+    //log('Attached event listener to push-close button');
 },
 
 deleteAll = function (prompt) {
@@ -255,7 +264,7 @@ deleteAll = function (prompt) {
 
     window.setTimeout(function () {
         injectBoxes();
-    }, 500);
+    }, 1000);
 
     window.setTimeout(function () {
         deleteAll(false);
@@ -334,7 +343,7 @@ deleteSelected = function () {
 
     window.setTimeout(function () {
         injectBoxes();
-    }, 5000);
+    }, 2000);
 
     return deleteCounter;
 },
@@ -448,12 +457,12 @@ boxFromPush = function (push) {
     return elems[0];
 },
 
-propogatePushList = function (newPush, bReverse) {
+propogatePushList = function (pshChanged, bReverse) {
     if (observer) { observer.disconnect(); }
 
     bProcessing = true;
 
-    newPush = newPush || null;
+    pshChanged = pshChanged || null;
     bReverse = bReverse || false;
 
     log('Beginning propagation of new push');
@@ -462,7 +471,7 @@ propogatePushList = function (newPush, bReverse) {
         checkedBoxes = getAllCheckboxes(true),
         boxPrevPush,
         boxCurrPush,
-        i;
+        i, pNum, rNum;
 
     if (pushes.length < 3 || checkedBoxes.length < 1) {
         log('Switching to box injection');
@@ -484,25 +493,43 @@ propogatePushList = function (newPush, bReverse) {
             boxCurrPush = addBoxToPush(pushes[i], boxPrevPush);
         }
 
-        if (newPush !== null) {
-            evListenAdd(closeBtnFromPush(newPush));
-        }
-    } else {
-        for (i = 0; i < pushes.length; i++) {
-            boxPrevPush = boxFromPush(pushes[i + 1]);
-            boxCurrPush = boxFromPush(pushes[i]);
+        if (pshChanged !== null) {
+            evListenAdd(closeBtnFromPush(pshChanged));
 
-            if (boxCurrPush !== null) {
-                deleteElement(boxCurrPush);
+            rNum = Math.random().toString();
+
+            pshChanged.setAttribute("num", rNum);
+
+            boxCurrPush.setAttribute("num", rNum);
+
+        }
+    } /* else {
+        for (var t = 0; t < checkedBoxes.length; t++) {
+            pNum = checkedBoxes[t].getAttribute('num');
+
+            if (pNum === checkedBoxes[t].parentElement.getAttribute('num')) { continue; }
+
+            for (i = 0; i < pushes.length; i++) {
+                if (pNum === pushes[i].getAttribute('num')) {
+                    addBoxToPush(pushes[i], checkedBoxes[t]);
+
+                    break;
+                }
             }
-
-            boxCurrPush = addBoxToPush(pushes[i], boxPrevPush);
         }
-    }
+        /*
+        if (pshChanged !== null) {
+            rNum = pshChanged.getAttribute('num');
+
+            boxCurrPush = document.querySelector(rNum)[0];
+
+            deleteElement(boxCurrPush);
+        }*//*
+    }*/
 
     log('Propagation of new push finished');
 
-    window.setTimeout(updateSAButton, 500);
+    window.setTimeout(updateSAButton, 1000);
 
     bProcessing = false;
 
@@ -533,7 +560,7 @@ btnOnclick = function (e) {
     e.preventDefault();
     e.cancelBubble = true;
 
-    window.setTimeout(doInjection, 500);
+    window.setTimeout(doInjection, 1000);
 
     return false;
 },
@@ -547,7 +574,7 @@ attachToButton = function (btn) {
 },
 
 initialize = function () {
-    window.setTimeout(doInjection, 100);
+    window.setTimeout(doInjection, 1000);
 
     var btns = document.getElementsByClassName('nota'),
         logo = document.getElementsByClassName('logo')[0],
@@ -568,15 +595,6 @@ initialize = function () {
                         log('New push panel found. Propogating...');
 
                         propogatePushList(node.parentElement);
-                    }
-                }
-            } else if (mutation.addedNodes) {
-                for (i = 0; i < mutation.removedNodes.length; i++) {
-                    node = mutation.removedNodes[i];
-                    if (node.className === 'panel') {
-                        log('New push panel found. Propogating...');
-
-                        propogatePushList(node.parentElement, true);
                     }
                 }
             }
