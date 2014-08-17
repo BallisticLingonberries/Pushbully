@@ -1,59 +1,15 @@
 var deleteCounter = 0, //How many have we deleted?
     chkBox,
+    logAll = true,
     observer, //Checkbox and observer template
     bProcessing = true, //Are we adding checkboxes?
 
-log = function (text) {
-    console.log('PUSHBULLY: ' + text);
-},
+log = function (text, bLogAnyway) {
+    bLogAnyway = bLogAnyway || false;
 
-obObserve = function () {
-    if (observer) {
-        observer.observe(document, {
-            childList: true,
-            subtree: true
-        });
+    if (logAll || bLogAnyway) {
+        console.log('PUSHBULLY: ' + text);
     }
-},
-
-confirmSuccess = function () {
-    var noteExists = (document.getElementsByClassName('note').length > 0);
-
-    if (noteExists) {
-        log('\'No more pushes\' note was found. Job completion confirmed.');
-    } else {
-        log('However, the \'no more pushes\' note was not found. There may be more notes.');
-    }
-
-    return noteExists;
-},
-
-closeBtnFromPush = function (push) {
-    var elems = push.getElementsByClassName('push-close');
-
-    if (!elems.length) {
-        return null;
-    }
-
-    return elems[0];
-},
-
-deletePush = function (push) {
-    var btn = closeBtnFromPush(push);
-
-    if (btn === null) {
-        return;
-    }
-
-    btn.click();
-
-    deleteCounter++;
-
-    return true;
-},
-
-getAllPushes = function () {
-    return document.body.getElementsByClassName('push');
 },
 
 getAllCheckboxes = function (bChecked) {
@@ -63,17 +19,6 @@ getAllCheckboxes = function (bChecked) {
 
     return allBoxes;
 },
-
-deleteElement = function (elem) {
-    if (elem === null) {
-        log('Could not delete elem because it was null');
-
-        return;
-    }
-
-    elem.parentElement.removeChild(elem);
-},
-
 updateSAButton = function (num) {
     var chkBoxLen = getAllCheckboxes(false).length,
         selectedLen = getAllCheckboxes(true).length,
@@ -94,6 +39,15 @@ updateSAButton = function (num) {
     dsBtn.disabled = (saBtn.disabled || (selectedLen < 1));
 },
 
+deleteElement = function (elem) {
+    if (elem === null) {
+        log('Could not delete elem because it was null');
+
+        return;
+    }
+
+    elem.parentElement.removeChild(elem);
+},
 deleteAllCheckboxes = function () {
     var checkboxes = getAllCheckboxes(), i;
 
@@ -122,13 +76,11 @@ checkABox = function (box, val) {
 
     return val;
 },
-
 chkBox_Click = function () {
     checkABox(this, !this.checked);
 
     log('Checkbox manually ' + (this.checked ? 'checked' : 'unchecked'));
 },
-
 addBoxToPush = function (push, box) {
     box = box || null;
 
@@ -152,6 +104,45 @@ addBoxToPush = function (push, box) {
     return newChkBox;
 },
 
+closeBtnFromPush = function (push) {
+    var elems = push.getElementsByClassName('push-close');
+
+    if (!elems.length) {
+        return null;
+    }
+
+    return elems[0];
+},
+
+getAllPushes = function () {
+    return document.body.getElementsByClassName('push');
+},
+
+obObserve = function () {
+    if (observer) {
+        observer.observe(document, {
+            childList: true,
+            subtree: true
+        });
+    }
+},
+
+randoNum,
+
+checkNoPushesNote = function (bNoLog) {
+    var noteExists = (document.getElementsByClassName('note').length > 0);
+
+    if (bNoLog) { return noteExists; }
+
+    if (noteExists) {
+        log('\'No more pushes\' note was found. Job completion confirmed.');
+    } else {
+        log('However, the \'no more pushes\' note was not found. There may be more notes.');
+    }
+
+    return noteExists;
+},
+
 injectBoxes = function (bEnsure) {
     bEnsure = bEnsure || false;
 
@@ -164,14 +155,45 @@ injectBoxes = function (bEnsure) {
     deleteAllCheckboxes(false);
 
     var pushes = getAllPushes(), currBox,
-                    closeButton, i, rNum;
+                    closeButton, i, nPage,
+                    ioPage, sPage, sPageNum;
 
     if (!pushes.length) {
         log('No pushes on which to inject checkboxes');
 
         bProcessing = false;
 
-        updateSAButton();
+        updateSAButton(0);
+
+        window.setTimeout(function () {
+            if (!checkNoPushesNote(true)) {
+                ioPage = window.location.href.indexOf('page=');
+
+                if (ioPage > -1) {
+                    sPage = location.href.slice(ioPage);
+
+                    sPageNum = parseInt(sPage[5]);
+
+                    if (sPageNum) {
+                        sPage = location.href.slice(0, ioPage - 1);
+
+                        if (sPage.indexOf('?') < 0) {
+                            nPage = '?';
+                        } else {
+                            nPage = '&';
+                        }
+
+                        nPage += 'page=' + (sPageNum - 1);
+
+                        window.location = nPage;
+
+                        return;
+                    }
+                }
+            }
+
+            obObserve();
+        }, 3000);
 
         return;
     }
@@ -183,11 +205,10 @@ injectBoxes = function (bEnsure) {
 
         evListenAdd(closeButton);
 
-        rNum = Math.random().toString();
+        if (!randoNum) { randoNum = Math.random() * 100; }
 
-        currBox.setAttribute("num", rNum);
-        pushes[i].setAttribute("num", rNum);
-
+        currBox.setAttribute("push-id", randoNum);
+        pushes[i].setAttribute("id", randoNum++);
     }
 
     log(pushes.length + ' checkboxes injected');
@@ -196,28 +217,21 @@ injectBoxes = function (bEnsure) {
 
     obObserve();
 
-    updateSAButton();
+    updateSAButton(pushes.length);
 },
 
-manualPushDeletionHandler = function () {//event) {
-    if (bProcessing) {
-        log('Not handling push delete because bProcessing === true');
+deletePush = function (push) {
+    var btn = closeBtnFromPush(push);
 
+    if (btn === null) {
         return;
     }
 
-    log('Push deleted \'manually\'');
+    btn.click();
 
-    //propogatePushList(this.parentElement, true);
+    deleteCounter++;
 
-    window.setTimeout(injectBoxes, 500);
-},
-
-evListenAdd = function (button) {
-    button.removeEventListener('click', manualPushDeletionHandler, false);
-    button.addEventListener('click', manualPushDeletionHandler, false);
-
-    //log('Attached event listener to push-close button');
+    return true;
 },
 
 deleteAll = function (prompt) {
@@ -228,7 +242,7 @@ deleteAll = function (prompt) {
     if (!pushes.length) {
         log('Deleted ' + deleteCounter + ' pushes. No more pushes to delete');
 
-        confirmSuccess();
+        checkNoPushesNote();
 
         injectBoxes();
 
@@ -240,7 +254,7 @@ deleteAll = function (prompt) {
     if (prompt && (pushes.length > 3)) {
         conf = confirm('Are you sure you wish to delete ' +
         (pushes.length > 49 ? '50+' : 'all ' + pushes.length) +
-        ' pushes?\n\nThis cannot be interrupted nor undone.');
+        ' pushes?\n\nThis cannot be reliably interrupted nor undone.');
 
         if (!conf) {
             log('Delete all cancelled');
@@ -273,14 +287,6 @@ deleteAll = function (prompt) {
     return deleteCounter;
 },
 
-deleteAll_Click = function () {
-    log('Delete all button clicked');
-
-    deleteCounter = 0;
-
-    deleteAll(true);
-},
-
 selectAll = function (check) {
     var boxes = getAllCheckboxes(), i, changed;
 
@@ -303,18 +309,6 @@ selectAll = function (check) {
     log(changed + ' checkboxes ' + (check ? 'checked' : 'unchecked'));
 
     return changed;
-},
-
-selectAll_Click = function () {
-    log('Select all button clicked');
-
-    selectAll(this.innerHTML.indexOf('Deselect') === -1);
-},
-
-refreshBoxes_Click = function () {
-    log('Refresh boxes button clicked');
-
-    injectBoxes();
 },
 
 deleteSelected = function () {
@@ -348,12 +342,6 @@ deleteSelected = function () {
     return deleteCounter;
 },
 
-deleteSelected_Click = function () {
-    log('Delete Selected button clicked');
-
-    deleteSelected();
-},
-
 getPushDiv = function (bGetButtonsDiv) {
     var pushDiv;
 
@@ -366,16 +354,45 @@ getPushDiv = function (bGetButtonsDiv) {
     return pushDiv;
 },
 
+refreshBoxes_Click = function () {
+    log('Refresh boxes button clicked');
+
+    injectBoxes();
+},
+deleteAll_Click = function () {
+    log('Delete all button clicked');
+
+    deleteCounter = 0;
+
+    deleteAll(true);
+},
+selectAll_Click = function () {
+    log('Select all button clicked');
+
+    selectAll(this.innerHTML.indexOf('Deselect') === -1);
+},
+deleteSelected_Click = function () {
+    log('Delete Selected button clicked');
+
+    deleteSelected();
+},
 injectButtons = function () {
     log('injecting the stupid buttons');
 
-    var pushDiv = getPushDiv(),
-        divButtons,
+    var pushDiv = getPushDiv();
+
+    if (pushDiv === null) {
+        log('injectButtons: pushDiv was null. Stopping inject...');
+
+        return;
+    }
+
+    var divButtons,
         btnClassName,
+        btnRefreshBoxes,
         btnDeleteAll,
         btnSelectAll,
         btnDeleteSelected,
-        btnRefreshBoxes,
         createElem = function (type) {
             type = type || 'button';
 
@@ -441,6 +458,126 @@ injectButtons = function () {
     log('Button box, buttons and checkbox template injected');
 },
 
+deleteAllButtons = function () {
+    var pushDiv = getPushDiv(true);
+
+    deleteElement(pushDiv);
+},
+deleteEverything = function () {
+    bProcessing = true;
+
+    deleteAllButtons();
+
+    deleteAllCheckboxes();
+},
+
+doInjection = function () {
+    log('doInject invoked');
+
+    if (!getPushDiv(true)) {
+        log('no buttons div found. injecting buttons');
+
+        injectButtons();
+    }
+
+    if (getPushDiv()) {
+        log('pushDiv found. injecting boxes');
+
+        injectBoxes();
+    }
+
+    log('doInject exiting...');
+},
+//rando,
+attachToClick = function (elem, handler) {
+    /*rando += 2;
+
+    var newHash = '#' + (rando).toString().slice(0, 3).replace('.', '');
+
+    var newURL = elem.getAttribute('href');
+
+    log(newURL);
+
+    if (newURL.indexOf('#') > -1) {
+        newURL = newURL.slice(0, newURL.indexOf('#'));
+    }
+
+    newURL += newHash;
+
+    log(newURL);
+
+    elem.setAttribute('href', newURL);
+    /**/
+    var hrf = elem.getAttribute('href');
+
+    if (hrf === null || hrf === '') {
+        return;
+    }
+
+    elem.removeAttribute('href');
+
+    log('attaching click event to anchor');
+
+    elem.removeEventListener('click', handler, true);
+
+    elem.setAttribute('pref', hrf);
+
+    elem.addEventListener('click', handler, true);
+},
+attachToButtons = function (handler) {
+    //rando = Math.random() * 100;
+
+    var t, btns = document.getElementsByClassName('nota');
+
+    for (t = 0; t < btns.length; t++) {
+        attachToClick(btns[t], handler);
+    }
+
+    var logo = document.getElementsByClassName('logo')[0];
+
+    attachToClick(logo, handler);
+},
+attachedClick = function (e) {
+    var pref = this.getAttribute('pref');
+
+    this.href = pref;
+
+    this.click();
+
+    this.removeAttribute('href');
+
+    e.preventDefault();
+    e.cancelBubble = true;
+
+    window.setTimeout(doInjection, 1000);
+
+    window.setTimeout(function () {
+        attachToButtons(attachedClick);
+    }, 2000);
+
+    return false;
+},
+reset = function (bFirstTime) {
+    bFirstTime = bFirstTime || false;
+
+    if (!bFirstTime) {
+        deleteEverything();
+    }
+
+    log('complete reset started. first time: ' + bFirstTime);
+
+    window.setTimeout(doInjection, 1000);
+
+    attachToButtons(attachedClick);
+
+    log('complete reset finished');
+},
+resetTimeout = function (bFirstTime) {
+    window.setTimeout(function () {
+        reset(bFirstTime);
+    }, 500);
+},
+
 boxFromPush = function (push) {
     push = push || null;
 
@@ -456,12 +593,25 @@ boxFromPush = function (push) {
 
     return elems[0];
 },
+manualPushDeletionHandler = function () {//event) {
+    if (bProcessing) {
+        log('Not handling push delete because bProcessing === true');
+
+        return;
+    }
+
+    log('Push deleted \'manually\'');
+
+    window.setTimeout(injectBoxes, 500);
+},
+evListenAdd = function (button) {
+    button.removeEventListener('click', manualPushDeletionHandler, false);
+    button.addEventListener('click', manualPushDeletionHandler, false);
+
+    //log('Attached event listener to push-close button');
+},
 
 propogatePushList = function (pshChanged, bReverse) {
-    if (observer) { observer.disconnect(); }
-
-    bProcessing = true;
-
     pshChanged = pshChanged || null;
     bReverse = bReverse || false;
 
@@ -471,15 +621,18 @@ propogatePushList = function (pshChanged, bReverse) {
         checkedBoxes = getAllCheckboxes(true),
         boxPrevPush,
         boxCurrPush,
-        i, pNum, rNum;
+        i;
 
-    if (pushes.length < 3 || checkedBoxes.length < 1) {
+    if (pushes.length < 3 || checkedBoxes.length < 1 || bReverse) {
         log('Switching to box injection');
 
         injectBoxes();
 
         return;
     }
+
+    if (observer) { observer.disconnect(); }
+    bProcessing = true;
 
     if (!bReverse) {
         for (i = pushes.length - 1; i >= 0; i--) {
@@ -496,12 +649,12 @@ propogatePushList = function (pshChanged, bReverse) {
         if (pshChanged !== null) {
             evListenAdd(closeBtnFromPush(pshChanged));
 
-            rNum = Math.random().toString();
+            if (!randoNum) {
+                randoNum = Math.random() * 100;
+            }
 
-            pshChanged.setAttribute("num", rNum);
-
-            boxCurrPush.setAttribute("num", rNum);
-
+            pshChanged.setAttribute("push-id", randoNum);
+            boxCurrPush.setAttribute("id", randoNum++);
         }
     } /* else {
         for (var t = 0; t < checkedBoxes.length; t++) {
@@ -536,74 +689,55 @@ propogatePushList = function (pshChanged, bReverse) {
     obObserve();
 },
 
-doInjection = function () {
-    log('Beginning injections');
-
-    if (!getPushDiv(true)) {
-        injectButtons();
-    }
-
-    if (getPushDiv()) {
-        injectBoxes();
-    }
-},
-
-btnOnclick = function (e) {
-    var pref = this.getAttribute('pref');
-
-    this.href = pref;
-
-    this.click();
-
-    this.href = '';
-
-    e.preventDefault();
-    e.cancelBubble = true;
-
-    window.setTimeout(doInjection, 1000);
-
-    return false;
-},
-
-attachToButton = function (btn) {
-    btn.setAttribute('pref', btn.href.replace('https://www.pushbullet.com', ''));
-
-    btn.href = '';
-
-    btn.onclick = btnOnclick;
-},
-
 initialize = function () {
-    window.setTimeout(doInjection, 1000);
-
-    var btns = document.getElementsByClassName('nota'),
-        logo = document.getElementsByClassName('logo')[0],
-        node, i;
-
-    for (i = 0; i < btns.length; i++) {
-        attachToButton(btns[i]);
-    }
-
-    attachToButton(logo);
+    resetTimeout(true);
 
     observer = new MutationObserver(function (mutations) {
+        if (bProcessing) { return; }
         mutations.forEach(function (mutation) {
             if (mutation.addedNodes) {
-                for (i = 0; i < mutation.addedNodes.length; i++) {
-                    node = mutation.addedNodes[i];
+                for (var i = 0; i < mutation.addedNodes.length; i++) {
+                    var node = mutation.addedNodes[i];
                     if (node.className === 'panel') {
                         log('New push panel found. Propogating...');
 
                         propogatePushList(node.parentElement);
                     }
                 }
-            }
+            }/* else if (mutation.removedNodes) {
+                for (var i = 0; i < mutation.removedNodes.length; i++) {
+                    var node = mutation.removedNodes[i];
+                    if(node.className === 'pushFrame') {
+                        log('pushFrame was deleted. Deleting buttons and checkboxes.')
+                        
+                        deleteEverything();
+                        
+                        return;
+                    }
+                }
+            }*/
         });
     });
 
     obObserve();
 
     log('Attached mutation observer to listen for new pushes.');
+
+    window.addEventListener('hashchange', function () {
+        log('hash changed. resetting...');
+
+        resetTimeout(false);
+    });
+
+    log('Attached hash changed listener to listen for page change.');
+
+    window.onpopstate = function () {
+        log('pop state changed. resetting...');
+
+        resetTimeout(false);
+    };
+
+    log('Attached pop state listener to listen for page change.');
 };
 
-initialize();
+window.onload = initialize();
