@@ -1,4 +1,4 @@
-@charset 'UTF-8';
+﻿@charset 'UTF-8';
 
 #pushbully-button-box {
     position: relative !important;
@@ -50,6 +50,14 @@
     #delete-selected-button:hover:enabled {
         background-color: red !important;
     }
+
+.standard-push-icon {
+    cursor: pointer !important;
+}
+
+.standard-push-icon:hover {
+    background-color: #ffffff !important;
+}
 
 .checkbox.pushbully-chk {
     display: inline-block !important;

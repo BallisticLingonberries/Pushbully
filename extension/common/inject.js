@@ -1,8 +1,9 @@
 var deleteCounter = 0, //How many have we deleted?
-    chkBox,
+    chkBox,//Checkbox template
     logAll = true,
-    observer, //Checkbox and observer template
-    bProcessing = true, //Are we adding checkboxes?
+    observer,
+    bProcessing = true, //Are we doing anything strenuous?
+    randoNum,
 
 log = function (text, bLogAnyway) {
     bLogAnyway = bLogAnyway || false;
@@ -32,7 +33,7 @@ updateSAButton = function (num) {
 
     saBtn.textContent = (deselect ? 'Deselect all' : 'Select ' + num);
     saBtn.title = (deselect ? 'Click to deselect all selected pushes.' :
-    'Click to select all pushes on the first page.');
+    'Click to select all pushes on the current page.');
 
     daBtn.disabled = (chkBoxLen < 1);
     saBtn.disabled = daBtn.disabled;
@@ -127,8 +128,6 @@ obObserve = function () {
     }
 },
 
-randoNum,
-
 checkNoPushesNote = function (bNoLog) {
     var noteExists = (document.getElementsByClassName('note').length > 0);
 
@@ -143,8 +142,8 @@ checkNoPushesNote = function (bNoLog) {
     return noteExists;
 },
 
-injectBoxes = function (bEnsure) {
-    bEnsure = bEnsure || false;
+injectBoxes = function (bNoRedirect) {
+    bNoRedirect = bNoRedirect || false;
 
     if (observer) { observer.disconnect(); }
 
@@ -156,44 +155,16 @@ injectBoxes = function (bEnsure) {
 
     var pushes = getAllPushes(), currBox,
                     closeButton, i, nPage,
-                    ioPage, sPage, sPageNum;
+                    sPage, sPageNum;
 
     if (!pushes.length) {
         log('No pushes on which to inject checkboxes');
 
-        bProcessing = false;
-
         updateSAButton(0);
 
-        window.setTimeout(function () {
-            if (!checkNoPushesNote(true)) {
-                ioPage = window.location.href.indexOf('page=');
+        bProcessing = false;
 
-                if (ioPage > -1) {
-                    sPage = location.href.slice(ioPage);
-
-                    sPageNum = parseInt(sPage[5]);
-
-                    if (sPageNum) {
-                        sPage = location.href.slice(0, ioPage - 1);
-
-                        if (sPage.indexOf('?') < 0) {
-                            nPage = '?';
-                        } else {
-                            nPage = '&';
-                        }
-
-                        nPage += 'page=' + (sPageNum - 1);
-
-                        window.location = nPage;
-
-                        return;
-                    }
-                }
-            }
-
-            obObserve();
-        }, 3000);
+        obObserve();
 
         return;
     }
@@ -376,6 +347,15 @@ deleteSelected_Click = function () {
 
     deleteSelected();
 },
+
+checkABoxTemp = function () {
+    if (this.classList.contains('selected')) {
+        this.classList.remove('selected');
+    } else {
+        this.classList.add('selected');
+    }
+},
+
 injectButtons = function () {
     log('injecting the stupid buttons');
 
@@ -454,6 +434,15 @@ injectButtons = function () {
                             '<i class="' + cBIClass + '">' +
                             '</i>' +
                        '</div>';
+
+    var icons = document.getElementsByClassName('standard-push-icon'),
+        icon;
+
+    for (var i = 0; i < icons.length; i++) {
+        icon = icons[i];
+
+        icon.onclick = checkABoxTemp;
+    }
 
     log('Button box, buttons and checkbox template injected');
 },
