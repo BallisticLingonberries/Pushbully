@@ -58,6 +58,7 @@
 .standard-push-icon.checkbox.checked {
     background-color: transparent !important;
     color: red !important;
+    border: 2px dotted !important;
 }
 
     .standard-push-icon.checkbox.checked:before,
@@ -67,4 +68,5 @@
 
     .standard-push-icon.checkbox.checked:hover {
         background-color: #ecf0f1 !important;
+        border: 2px solid !important;
     }

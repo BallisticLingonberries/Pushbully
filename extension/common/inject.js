@@ -1,5 +1,6 @@
 //(function () {
-//"use strict";
+
+'use strict';
 
 var deleteCounter = 0,
     logAll = true,
@@ -11,46 +12,50 @@ var deleteCounter = 0,
     btnDeleteSelected,
 
 log = function (text) {
+
     if (logAll) {
+
         console.log('PUSHBULLY: ' + text);
+
     }
+
 },
 
 setProcessing = function (bState) {
+
     bProcessing = bState;
 
     log('bProcessing === ' + bState.toString().toUpperCase());
+
 },
 
 getCBoxes = function (bChecked) {
-    var boxes = document.body.querySelectorAll('.standard-push-icon.checkbox' +
-            (bChecked
-                ? '.checked'
-                : ''
-            )
-    );
+    var query = '.standard-push-icon.checkbox';
 
-    return boxes;
-},
-
-updateSAButton = function (bSelect) {
-    if (bSelect === null) {
-        bSelect = (btnSelectAll.getAttribute('select') === 'true');
+    if (bChecked) {
+        query += '.checked';
     }
 
-    log('Updating SA button');
+    return document.querySelectorAll(query);
+
+},
+
+updateOurButtons = function () {
+
+    log('Updating our buttons...');
 
     var cBoxCountAll = getCBoxes(false).length,
         cBoxCountChecked = getCBoxes(true).length;
 
     var bStrDeselect = ((cBoxCountAll > 0) && (cBoxCountAll === cBoxCountChecked));
 
-    btnSelectAll.setAttribute('textContent',
+    btnSelectAll.setAttribute('select', !bStrDeselect);
+
+    btnSelectAll.innerText =
         (bStrDeselect
-            ? 'Deselect ' + cBoxCountChecked
+            ? 'Deselect All'
             : 'Select ' + cBoxCountAll
-        )
-    );
+        );
 
     btnSelectAll.setAttribute('title',
         (bStrDeselect
@@ -59,41 +64,60 @@ updateSAButton = function (bSelect) {
         )
     );
 
+    btnDeleteSelected.innerText = 'Delete Selected (' + cBoxCountChecked + ')';
+
     var disableDASA = (cBoxCountAll < 1),
         disableDS = (cBoxCountChecked < 1);
 
     btnDeleteAll.disabled = disableDASA;
     btnSelectAll.disabled = disableDASA;
     btnDeleteSelected.disabled = (disableDASA || disableDS);
+
+    log('Our buttons updated.');
+
 },
 
 getPushes = function () {
+
     return document.body.getElementsByClassName('push');
+
 },
 
 dcDoCheck = function (elem, bCheck) {
+
     var sClassName = 'checked';
 
     if (bCheck) {
+
         elem.classList.add(sClassName);
-    }
-    else {
+
+    } else {
+
         elem.classList.remove(sClassName);
+
     }
+
 },
 
 checkCBox = function (cBox, bCheck) {
+
     var bIsChecked = (cBox.getAttribute('checked') === 'true'),
         bToCheck = null; //I want to make sure this is null...
 
     if (bCheck === null || bCheck !== bIsChecked) {
+
         if (bCheck === null) {
+
             bToCheck = !bIsChecked;
+
         } else {
+
             bToCheck = bCheck;
+
         }
 
         cBox.setAttribute('checked', bToCheck);
+
     }
 
     bToCheck = (bToCheck !== null && bToCheck);
@@ -104,145 +128,270 @@ checkCBox = function (cBox, bCheck) {
     var title;
 
     if (bToCheck) {
+
         title = 'Click to save this push from certain doom.';
+
     } else {
+
         title = 'Click to mark this push for destruction.';
+
     }
 
     cBox.setAttribute('title', title);
 
     if (!bProcessing) {
+
         log('Checkbox clicked.');
 
-        updateSAButton();
+        updateOurButtons();
+
     }
+
 },
 
-//Begin push wiring (close, checkbox, new push)
-getCBoxFromPsh = function (push) {
-    return push.querySelector('.standard-push-icon');
+propagatePush = function (push, bDeleted) {
+
+    log('PropagatePush: Push ' + (bDeleted ? 'deletion' : 'addition') + ' propagation  initiated...');
+
+    var cBoxes = getCBoxes(true);
+
+    log('PropagatePush: cBoxes:');
+
+    console.log(cBoxes);
+
+    if (cBoxes.length < 1) {
+
+        log('PropagatePush: No need to propagate; no checked pushes. Resetting checkboxes...');
+
+        refreshCBoxes();
+
+        return;
+
+    }
+
+    cBoxes = getCBoxes();
+
+    var prop = function (box1, box2) {
+
+        if (box1 === null) { return; }
+
+        if (box2 === null) {
+
+            checkCBox(box1, false);
+
+            return;
+
+        } else {
+
+            checkCBox(box1, (box2.getAttribute('checked') === 'true'));
+
+            return;
+
+        }
+
+    }, i;
+
+    if (!bDeleted) {
+
+        for (i = 0; i < cBoxes.length; i++) { //Push was deleted
+
+            prop(cBoxes[i], cBoxes[i + 1]);
+
+        }
+
+    } else {
+
+        for (i = cBoxes.length - 1; i > -1; i--) { //Push was added
+
+            prop(cBoxes[i], cBoxes[i - 1]);
+
+        }
+
+        initializePush(push);
+
+    }
+
+    updateOurButtons();
+
 },
-getClsBtnFromPsh = function (push) {
-    return push.querySelector('.push-close');
-},
-checkbox_Click = function () {
-    checkCBox(this, null);
-},
-closeButton_Click = function () {
+
+//Begin push wiring (close, checkbox, new push, delete push)
+closeButtonClick = function () {
+
     log('Close button clicked');
-    //TODO: Handle manual close button clicking (propogation)
+
+    propagatePush(this.parentElement, true);
+
+},
+getCBoxFromPush = function (push) {
+
+    return push.querySelector('.standard-push-icon');
+
+},
+getClsBtnFromPush = function (push) {
+
+    return push.querySelector('.push-close');
+
+},
+checkboxClick = function () {
+
+    checkCBox(this, null);
+
 },
 initializePush = function (push) {
-    var cBox = getCBoxFromPsh(push),
-        closeButton = getClsBtnFromPsh(push);
+
+    var cBox = getCBoxFromPush(push),
+        closeButton = getClsBtnFromPush(push);
 
     if ((cBox === null) || (closeButton === null)) {
+
         return false;
+
     }
 
     if (!cBox.classList.contains('checkbox')) {
+
         cBox.classList.add('checkbox');
 
-        cBox.removeEventListener('click', checkbox_Click, false);
-        cBox.addEventListener('click', checkbox_Click, false);
+        cBox.removeEventListener('click', checkboxClick, false);
+        cBox.addEventListener('click', checkboxClick, false);
+
     }
 
     checkCBox(cBox, false);
 
-    closeButton.removeEventListener('click', closeButton_Click, false);
-    closeButton.addEventListener('click', closeButton_Click, false);
+    closeButton.removeEventListener('click', closeButtonClick, false);
+    closeButton.addEventListener('click', closeButtonClick, false);
 
     return true;
+
 },
 //End push wiring (close, checkbox, new push)
 
 deletePush = function (push) {
-    var btn = getClsBtnFromPsh(push);
+
+    var btn = getClsBtnFromPush(push);
 
     if (btn && btn !== null) {
+
         btn.click();
 
         deleteCounter++;
+
     }
+
 },
 
 noPushNoteExists = function () {
+
     var note = document.querySelector('note');
 
     if (note && note !== null) {
+
         log('\'No more pushes\' note was found.');
 
         return true;
+
     } else {
+
         log('\'No more pushes\' note was not found.');
 
         return false;
+
     }
+
 },
 
 getButtonsDiv = function () {
-    return document.querySelector('div.pushbully-button-box');
+
+    return document.querySelector('div#pushbully-button-box');
+
 },
 
 getPushFrameDiv = function () {
+
     return document.querySelector('div.pushframe');
+
 },
 
 refreshCBoxes = function () {
-    setProcessing(true, this);
 
-    log('Injecting checkboxes...');
+    if (getPushFrameDiv() === null) {
+
+        log('RefreshBoxes: Push frame not found. Stopping box inject...');
+
+        return false;
+
+    } else {
+
+        log('RefreshBoxes: Push frame found. About to inject boxes...');
+
+    }
+    setProcessing(true, this);
 
     var pushes = getPushes();
 
     if (!pushes.length) {
-        log('No pushes on which to inject checkboxes.');
+
+        log('RefreshBoxes: No pushes on which to inject checkboxes.');
 
         setProcessing(false, this);
 
-        updateSAButton(0);
+        updateOurButtons(0);
 
         return false;
+
     }
 
     var counter = 0, push;
 
     for (var i = 0; i < pushes.length; i++) {
+
         push = pushes[i];
 
         if (push.parentNode.classList.contains('pushtype')) {
+
             continue;
+
         }
 
         if (initializePush(push, true)) {
+
             counter++;
+
         }
+
     }
 
-    log('Injected ' + counter + ' checkboxes.');
+    log('RefreshBoxes: Injected ' + counter + ' checkboxes.');
 
     setProcessing(false, this);
 
-    updateSAButton();
+    updateOurButtons();
 
     return (counter > 0);
+
 },
 deleteAll = function (prompt) {
+
     setProcessing(true, this);
 
     var pushes = getPushes();
 
     if (!pushes.length) {
-        log('Deleted ' + deleteCounter + ' pushes. No more pushes to delete');
+
+        log('DeleteAll: Deleted ' + deleteCounter + ' pushes. No more pushes to delete');
 
         noPushNoteExists();
 
         refreshCBoxes();
 
         return;
+
     }
 
     if (prompt && (pushes.length > 3)) {
+
         var conf = confirm('Are you sure you wish to delete ' +
                 (pushes.length > 49
                     ? '50+'
@@ -252,54 +401,68 @@ deleteAll = function (prompt) {
             );
 
         if (!conf) {
+
             log('Delete all cancelled');
 
             setProcessing(false, this);
 
             return;
+
         }
 
-        log('Delete all confirmed');
+        log('DeleteAll: Delete all confirmed');
+
     }
 
     for (var i = pushes.length - 1; i >= 0; i--) {
+
         deletePush(pushes[i]);
+
     }
 
     var secsToWait = 3;
 
-    log('Deleted ' + deleteCounter + ' so far. Waiting ' +
+    log('DeleteAll: Deleted ' + deleteCounter + ' so far. Waiting ' +
         secsToWait + ' seconds.'
     );
 
     window.setTimeout(refreshCBoxes, 1000);
 
     window.setTimeout(function () {
+
         deleteAll(false);
+
     }, secsToWait * 1000);
+
 },
 selectAll = function () {
-    var bSelect = (btnSelectAll.getAttribute('select') === 'true');
 
-    var boxes = getCBoxes();
+    var bSelect = (btnSelectAll.getAttribute('select') === 'true'),
+        boxes = getCBoxes();
 
     if (!boxes.length) {
+
         log('No pushes on which to toggle checkboxes');
 
         return 0;
+
     }
 
     var counter = 0, box, bIsChecked;
 
     for (var i = boxes.length - 1; i >= 0; i--) {
+
         box = boxes[i];
         bIsChecked = (box.getAttribute('checked') === 'true');
 
         if (bIsChecked !== bSelect) {
+
             checkCBox(box, bSelect);
 
             counter++;
+
         }
+
     }
 
     log(counter + ' checkboxes ' +
@@ -309,11 +472,13 @@ selectAll = function () {
         )
     );
 
-    updateSAButton(!bSelect);
+    updateOurButtons();
 
     return counter;
+
 },
 deleteSelected = function () {
+
     setProcessing(true, this);
 
     deleteCounter = 0;
@@ -321,66 +486,105 @@ deleteSelected = function () {
     var boxes = getCBoxes(true);
 
     if (!boxes.length) {
-        log('No checked pushes to delete');
+
+        log('DeleteSelected: No checked pushes to delete');
 
         refreshCBoxes();
 
         return 0;
+
     }
 
     for (var i = boxes.length - 1; i >= 0; i--) {
+
         deletePush(boxes[i].parentElement);
+
     }
 
-    log(deleteCounter + ' pushes deleted');
+    log('DeleteSelected: ' + deleteCounter + ' pushes deleted');
 
     window.setTimeout(function () {
+
         refreshCBoxes();
+
     }, 2000);
 
     return deleteCounter;
+
 },
 
 //Begin button wiring
-btnRefreshBoxes_Click = function () {
+btnRefreshBoxesClick = function () {
+
     log('Refresh boxes button clicked');
 
     refreshCBoxes();
+
 },
-btnDeleteAll_Click = function () {
+btnDeleteAllClick = function () {
+
     log('Delete all button clicked');
 
     deleteCounter = 0;
 
     deleteAll(true);
+
 },
-btnSelectAll_Click = function () {
+btnSelectAllClick = function () {
+
     log('Select all button clicked');
 
     selectAll();
+
 },
-btnDeleteSelected_Click = function () {
+btnDeleteSelectedClick = function () {
+
     log('Delete Selected button clicked');
 
     deleteSelected();
+
 },
 injectButtons = function () {
+
     log('Injecting buttons...');
 
     var pushDiv = getPushFrameDiv();
 
     if (pushDiv === null) {
+
         log('InjectButtons: PushFrame div not found. Stopping inject...');
 
         return false;
+
     }
+
+    var buttonsDiv = getButtonsDiv();
+
+    if (buttonsDiv !== null) {
+
+        log('InjectButtons: Buttons div already exists. Deleting it...');
+
+        deleteElement(buttonsDiv);
+
+        log('InjectButtons: Buttons div deleted.');
+
+
+    } else {
+
+        log('InjectButtons: Buttons div doesn\'t exist.');
+
+    }
+
+    log('InjectButtons: Injecting buttons...');
 
     var divButtons,
         btnClassName,
         createElem = function (type) {
+
             type = type || 'button';
 
             return document.createElement(type);
+
         };
 
     //Button divider
@@ -397,7 +601,7 @@ injectButtons = function () {
     btnRefreshBoxes.className = btnClassName;
     btnRefreshBoxes.id = 'refresh-boxes-button';
     btnRefreshBoxes.title = 'Sometimes pushes won\'t have checkboxes on them. Click this to fix that.';
-    btnRefreshBoxes.addEventListener('click', btnRefreshBoxes_Click, false);
+    btnRefreshBoxes.addEventListener('click', btnRefreshBoxesClick, false);
     divButtons.appendChild(btnRefreshBoxes);
 
     //Delete selected button
@@ -406,7 +610,7 @@ injectButtons = function () {
     btnDeleteSelected.className = btnClassName;
     btnDeleteSelected.id = 'delete-selected-button';
     btnDeleteSelected.title = 'Click to delete all of the pushes you have selected.';
-    btnDeleteSelected.addEventListener('click', btnDeleteSelected_Click, false);
+    btnDeleteSelected.addEventListener('click', btnDeleteSelectedClick, false);
     divButtons.appendChild(btnDeleteSelected);
 
     //Select all button
@@ -414,7 +618,7 @@ injectButtons = function () {
     btnSelectAll.textContent = 'Select All';
     btnSelectAll.className = btnClassName;
     btnSelectAll.id = 'select-all-button';
-    btnSelectAll.addEventListener('click', btnSelectAll_Click, false);
+    btnSelectAll.addEventListener('click', btnSelectAllClick, false);
     btnSelectAll.setAttribute('select', true);
     divButtons.appendChild(btnSelectAll);
 
@@ -424,60 +628,66 @@ injectButtons = function () {
     btnDeleteAll.className = btnClassName;
     btnDeleteAll.id = 'delete-all-button';
     btnDeleteAll.title = 'Click to delete all of your pushes.';
-    btnDeleteAll.addEventListener('click', btnDeleteAll_Click, false);
+    btnDeleteAll.addEventListener('click', btnDeleteAllClick, false);
     divButtons.appendChild(btnDeleteAll);
 
     log('Button box and buttons injected.');
 
     return true;
+
 },
 //End button wiring
 
 deleteElement = function (elem) {
+
     if (elem !== null) {
+
         elem.parentElement.removeChild(elem);
+
     }
-},
 
-deleteAllButtons = function () {
-    var pushDiv = getButtonsDiv();
-
-    deleteElement(pushDiv);
 },
 
 doInjection = function () {
+
     log('Injection initiated...');
 
     var bChanged = false;
 
-    if (!getButtonsDiv()) {
-        log('Buttons div not found. About inject buttons...');
+    if (injectButtons() | refreshCBoxes()) {
 
-        if (injectButtons()) { bChanged = true; }
-    }
+        bChanged = true;
 
-    if (getPushFrameDiv()) {
-        log('Push frame found. About to inject boxes...');
-
-        if (refreshCBoxes()) { bChanged = true; }
     }
 
     if (bChanged) {
-        log('Injection complete...');
+
+        log('DoInjection: Injection complete.');
+
     } else {
-        log('Injection unnecessary or unsuccessful.');
+
+        log('DoInjection: Injection unnecessary or unsuccessful.');
+
     }
+
+    return bChanged;
+
 },
 
 attachToClick = function (elem, handler) {
+
     if (elem === null) {
+
         return false;
+
     }
 
     var hrf = elem.getAttribute('href');
 
     if (hrf === null || hrf === '') {
+
         return false;
+
     }
 
     elem.setAttribute('pref', hrf);
@@ -487,24 +697,35 @@ attachToClick = function (elem, handler) {
     elem.addEventListener('click', handler, true);
 
     return true;
+
 },
 attachToButtons = function (handler) {
-    log('Attaching click events to page change anchors.');
+
+    log('AttachToButtons: Attaching click events to page change anchors.');
     var btns = document.getElementsByClassName('nota'),
         counter = 0;
 
     for (var t = 0; t < btns.length; t++) {
+
         if (attachToClick(btns[t], handler)) {
+
             counter++;
+
         }
+
     }
 
-    var logo = document.getElementsByClassName('logo')[0];
+    var logo = document.querySelector('.logo');
 
     attachToClick(logo, handler);
-    log('Finished attaching ' + counter + ' click events to anchors.');
+
+    log('AttachToButtons: Finished attaching ' + counter + ' click events to anchors.');
+
+    return counter;
+
 },
 attachedClick = function (e) {
+
     var pref = this.getAttribute('pref');
 
     this.href = pref;
@@ -516,33 +737,27 @@ attachedClick = function (e) {
     e.preventDefault();
     e.cancelBubble = true;
 
-    window.setTimeout(doInjection, 1000);
+    window.setTimeout(totalReset(false), 1000);
 
-    window.setTimeout(function () {
-        attachToButtons(attachedClick);
-    }, 2000);
-
-    return false;
 },
 
-totalReset = function (bFirstTime) {
-    bFirstTime = bFirstTime || false;
+totalReset = function () {
+
     window.setTimeout(function () {
-        if (!bFirstTime) {
-            deleteAllButtons();
-        }
+        log('TotalReset: Complete reset initiated...');
 
-        log('complete reset started. first time: ' + bFirstTime);
-
-        window.setTimeout(doInjection, 1000);
+        window.setTimeout(doInjection, 500);
 
         attachToButtons(attachedClick);
 
-        log('complete reset finished');
+        log('TotalReset: Reset completed.');
+
     }, 500);
+
 },
 
 initialize = function () {
+
     setProcessing(true, this);
 
     totalReset(true);
@@ -550,47 +765,66 @@ initialize = function () {
     setProcessing(true, this);
 
     observer = new MutationObserver(function (mutations) {
+
         if (bProcessing) { return; }
         mutations.forEach(function (mutation) {
+
             if (mutation.addedNodes) {
+
                 for (var i = 0; i < mutation.addedNodes.length; i++) {
+
                     var node = mutation.addedNodes[i];
                     if (node.className === 'panel') {
-                        log('New push panel found. Propogating...');
 
-                        initializePush(node.parentElement);
+                        log('Mutation: New push panel found. Propogating...');
+
+                        propagatePush(node.parentElement, false);
+
                     }
+
                 }
+
             }
+
         });
+
     });
 
     if (observer) {
+
         observer.observe(document, {
+
             childList: true,
             subtree: true
+
         });
+
     }
 
-    log('Attached mutation observer to listen for new pushes.');
+    log('Initialize: Attached mutation observer to listen for new pushes.');
 
     window.addEventListener('hashchange', function () {
-        log('hash changed. resetting...');
+
+        log('Hash: Hash changed. Resetting...');
 
         totalReset(false);
+
     });
 
-    log('Attached hash changed listener to listen for page change.');
+    log('Initialize: Attached hash changed listener to listen for page change.');
 
     window.onpopstate = function () {
-        log('pop state changed. resetting...');
+
+        log('Pop: Pop state changed. Resetting...');
 
         totalReset(false);
+
     };
 
-    log('Attached pop state listener to listen for page change.');
+    log('Initialize: Attached pop state listener to listen for page change.');
 
     setProcessing(false, this);
+
 };
 
 window.onload = initialize();
