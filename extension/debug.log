@@ -1,5 +1,0 @@
-[0817/102510:WARNING:resource_bundle.cc(303)] locale_file_path.empty()
-[0817/113623:WARNING:dns_config_service_win.cc(599)] Failed to read DnsConfig.
-[0817/113627:WARNING:dns_config_service_win.cc(599)] Failed to read DnsConfig.
-[0817/113628:WARNING:dns_config_service_win.cc(599)] Failed to read DnsConfig.
-[0817/113630:WARNING:dns_config_service_win.cc(599)] Failed to read DnsConfig.
