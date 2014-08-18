@@ -1,15 +1,15 @@
-//(function () {
-
-'use strict';
+//I WILL GET THIS!
 
 var deleteCounter = 0,
     logAll = true,
     observer = null,
+    lastKey = null,
     bProcessing = false,
     btnRefreshBoxes,
     btnSelectAll,
     btnDeleteAll,
     btnDeleteSelected,
+    middleDiv, leftDiv,
 
 log = function (text) {
 
@@ -21,22 +21,46 @@ log = function (text) {
 
 },
 
-setProcessing = function (bState) {
+setProcessing = function (bState, key) {
 
-    bProcessing = bState;
+    if (bState && lastKey === null) {
 
-    log('bProcessing === ' + bState.toString().toUpperCase());
+        lastKey = key;
+
+        bProcessing = bState;
+
+    } else if (!bState && key.toLowerCase() === lastKey.toLowerCase()) {
+
+        lastKey = null;
+
+        bProcessing = false;
+
+    } else {
+
+        log('SetProcessing: "' + key + '" tried to set process state, but it doesn\'t match "' + lastKey + '"');
+
+        return;
+
+    }
+
+    log('bProcessing set to ' + bState.toString().toUpperCase() + ' by "' + key + '"');
 
 },
 
 getCBoxes = function (bChecked) {
-    var query = '.standard-push-icon.checkbox';
+    var query = 'standard-push-icon checkbox';
 
-    if (bChecked) {
-        query += '.checked';
+    if (bChecked !== null && bChecked) {
+        query += ' checked';
     }
 
-    return document.querySelectorAll(query);
+    var elem = middleDiv.getElementsByClassName(query);
+
+    //console.log('GetBoxes: Retrieved boxes matching bChecked === ' + bChecked + ':');
+
+    //console.log(elem);
+
+    return elem;
 
 },
 
@@ -79,7 +103,7 @@ updateOurButtons = function () {
 
 getPushes = function () {
 
-    return document.body.getElementsByClassName('push');
+    return middleDiv.getElementsByClassName('push');
 
 },
 
@@ -151,13 +175,15 @@ checkCBox = function (cBox, bCheck) {
 
 propagatePush = function (push, bDeleted) {
 
+    setProcessing(true, 'propagate');
+
     log('PropagatePush: Push ' + (bDeleted ? 'deletion' : 'addition') + ' propagation  initiated...');
 
     var cBoxes = getCBoxes(true);
 
-    log('PropagatePush: cBoxes:');
+    //log('PropagatePush: cBoxes:');
 
-    console.log(cBoxes);
+    //console.log(cBoxes);
 
     if (cBoxes.length < 1) {
 
@@ -165,23 +191,36 @@ propagatePush = function (push, bDeleted) {
 
         refreshCBoxes();
 
+        setProcessing(false, 'propagate');
+
         return;
 
     }
 
-    cBoxes = getCBoxes();
-
     var prop = function (box1, box2) {
 
-        if (box1 === null) { return; }
+        if (box1 === null || !box1) {
 
-        if (box2 === null) {
+            return;
+
+        }
+
+        if (box2 === null || !box2) {
 
             checkCBox(box1, false);
 
             return;
 
+        } else if (box2.getAttribute('checked') === box1.getAttribute('checked')) {
+
+            return;
+
         } else {
+
+            //console.log('PROPAGATE FUCKIN PUSHES: FUCKIN BOX 1 and 2');
+
+            //console.log(box1);
+            //console.log(box2);
 
             checkCBox(box1, (box2.getAttribute('checked') === 'true'));
 
@@ -191,7 +230,9 @@ propagatePush = function (push, bDeleted) {
 
     }, i;
 
-    if (!bDeleted) {
+    cBoxes = getCBoxes();
+
+    if (bDeleted) {
 
         for (i = 0; i < cBoxes.length; i++) { //Push was deleted
 
@@ -201,21 +242,22 @@ propagatePush = function (push, bDeleted) {
 
     } else {
 
+        initializePush(push, 0);
+
         for (i = cBoxes.length - 1; i > -1; i--) { //Push was added
 
             prop(cBoxes[i], cBoxes[i - 1]);
 
         }
 
-        initializePush(push);
-
     }
 
-    updateOurButtons();
+    setProcessing(false, 'propagate');
+
+    //updateOurButtons();
 
 },
 
-//Begin push wiring (close, checkbox, new push, delete push)
 closeButtonClick = function () {
 
     log('Close button clicked');
@@ -225,12 +267,12 @@ closeButtonClick = function () {
 },
 getCBoxFromPush = function (push) {
 
-    return push.querySelector('.standard-push-icon');
+    return push.getElementsByClassName('standard-push-icon')[0];
 
 },
 getClsBtnFromPush = function (push) {
 
-    return push.querySelector('.push-close');
+    return push.getElementsByClassName('push-close')[0];
 
 },
 checkboxClick = function () {
@@ -238,7 +280,7 @@ checkboxClick = function () {
     checkCBox(this, null);
 
 },
-initializePush = function (push) {
+initializePush = function (push, indx) {
 
     var cBox = getCBoxFromPush(push),
         closeButton = getClsBtnFromPush(push);
@@ -266,7 +308,6 @@ initializePush = function (push) {
     return true;
 
 },
-//End push wiring (close, checkbox, new push)
 
 deletePush = function (push) {
 
@@ -284,7 +325,7 @@ deletePush = function (push) {
 
 noPushNoteExists = function () {
 
-    var note = document.querySelector('note');
+    var note = middleDiv.getElementsByClassName('note')[0];
 
     if (note && note !== null) {
 
@@ -304,13 +345,13 @@ noPushNoteExists = function () {
 
 getButtonsDiv = function () {
 
-    return document.querySelector('div#pushbully-button-box');
+    return document.getElementById('pushbully-button-box');
 
 },
 
 getPushFrameDiv = function () {
 
-    return document.querySelector('div.pushframe');
+    return middleDiv.getElementsByClassName('pushframe')[0];
 
 },
 
@@ -327,7 +368,7 @@ refreshCBoxes = function () {
         log('RefreshBoxes: Push frame found. About to inject boxes...');
 
     }
-    setProcessing(true, this);
+    setProcessing(true, 'refreshbox');
 
     var pushes = getPushes();
 
@@ -335,7 +376,7 @@ refreshCBoxes = function () {
 
         log('RefreshBoxes: No pushes on which to inject checkboxes.');
 
-        setProcessing(false, this);
+        setProcessing(false, 'refreshbox');
 
         updateOurButtons(0);
 
@@ -355,7 +396,7 @@ refreshCBoxes = function () {
 
         }
 
-        if (initializePush(push, true)) {
+        if (initializePush(push, i)) {
 
             counter++;
 
@@ -365,7 +406,7 @@ refreshCBoxes = function () {
 
     log('RefreshBoxes: Injected ' + counter + ' checkboxes.');
 
-    setProcessing(false, this);
+    setProcessing(false, 'refreshbox');
 
     updateOurButtons();
 
@@ -374,7 +415,7 @@ refreshCBoxes = function () {
 },
 deleteAll = function (prompt) {
 
-    setProcessing(true, this);
+    setProcessing(true, 'deleteAll');
 
     var pushes = getPushes();
 
@@ -386,25 +427,27 @@ deleteAll = function (prompt) {
 
         refreshCBoxes();
 
+        setProcessing(false, 'deleteAll');
+
         return;
 
     }
 
     if (prompt && (pushes.length > 3)) {
 
-        var conf = confirm('Are you sure you wish to delete ' +
+        var conf = confirm('Are you sure you wish to delete all ' +
                 (pushes.length > 49
                     ? '50+'
-                    : 'all ' + pushes.length
+                    : pushes.length
                 ) +
-                ' pushes?\n\nThis cannot be reliably interrupted nor undone.'
+                ' pushes?\n\nThis cannot be interrupted nor undone.'
             );
 
         if (!conf) {
 
             log('Delete all cancelled');
 
-            setProcessing(false, this);
+            setProcessing(false, 'deleteAll');
 
             return;
 
@@ -448,6 +491,8 @@ selectAll = function () {
 
     }
 
+    setProcessing(true, 'selectAll');
+
     var counter = 0, box, bIsChecked;
 
     for (var i = boxes.length - 1; i >= 0; i--) {
@@ -472,6 +517,8 @@ selectAll = function () {
         )
     );
 
+    setProcessing(false, 'selectAll');
+
     updateOurButtons();
 
     return counter;
@@ -479,7 +526,7 @@ selectAll = function () {
 },
 deleteSelected = function () {
 
-    setProcessing(true, this);
+    setProcessing(true, 'deleteSelected');
 
     deleteCounter = 0;
 
@@ -490,6 +537,8 @@ deleteSelected = function () {
         log('DeleteSelected: No checked pushes to delete');
 
         refreshCBoxes();
+
+        setProcessing(false, 'deleteSelected');
 
         return 0;
 
@@ -507,13 +556,14 @@ deleteSelected = function () {
 
         refreshCBoxes();
 
+        setProcessing(false, 'deleteSelected');
+
     }, 2000);
 
     return deleteCounter;
 
 },
 
-//Begin button wiring
 btnRefreshBoxesClick = function () {
 
     log('Refresh boxes button clicked');
@@ -636,7 +686,6 @@ injectButtons = function () {
     return true;
 
 },
-//End button wiring
 
 deleteElement = function (elem) {
 
@@ -702,7 +751,7 @@ attachToClick = function (elem, handler) {
 attachToButtons = function (handler) {
 
     log('AttachToButtons: Attaching click events to page change anchors.');
-    var btns = document.getElementsByClassName('nota'),
+    var btns = leftDiv.getElementsByClassName('nota'),
         counter = 0;
 
     for (var t = 0; t < btns.length; t++) {
@@ -715,7 +764,7 @@ attachToButtons = function (handler) {
 
     }
 
-    var logo = document.querySelector('.logo');
+    var logo = document.getElementsByClassName('logo')[0];
 
     attachToClick(logo, handler);
 
@@ -758,15 +807,19 @@ totalReset = function () {
 
 initialize = function () {
 
-    setProcessing(true, this);
+    setProcessing(true, 'initialize');
+
+    middleDiv = document.getElementsByClassName('middle-list')[0];
+    leftDiv = document.getElementById('device-and-friend-list');
 
     totalReset(true);
 
-    setProcessing(true, this);
-
     observer = new MutationObserver(function (mutations) {
 
-        if (bProcessing) { return; }
+        if (bProcessing) { 
+        log('Mutation blocked because "' + lastKey + '" left bProcessing on');
+        
+        return; }
         mutations.forEach(function (mutation) {
 
             if (mutation.addedNodes) {
@@ -774,11 +827,11 @@ initialize = function () {
                 for (var i = 0; i < mutation.addedNodes.length; i++) {
 
                     var node = mutation.addedNodes[i];
-                    if (node.className === 'panel') {
+                    if (node.className === 'push') {
 
                         log('Mutation: New push panel found. Propogating...');
 
-                        propagatePush(node.parentElement, false);
+                        propagatePush(node, false);
 
                     }
 
@@ -792,7 +845,7 @@ initialize = function () {
 
     if (observer) {
 
-        observer.observe(document, {
+        observer.observe(middleDiv, {
 
             childList: true,
             subtree: true
@@ -823,9 +876,16 @@ initialize = function () {
 
     log('Initialize: Attached pop state listener to listen for page change.');
 
-    setProcessing(false, this);
+    setProcessing(false, 'initialize');
 
 };
 
+//TODO: Add confirmation to deleteselected.
+
+//TODO: Add index checker for deletion handler (initializepush).
+
+//TODO: Figure out why mutation event isn't firing.
+
+//Go to sleep earlier
+
 window.onload = initialize();
-//})();
