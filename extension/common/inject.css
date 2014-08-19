@@ -2,29 +2,20 @@
 
 #pushbully-button-box {
     position: relative !important;
+    float: right !important;
     -moz-box-sizing: border-box !important;
     -webkit-box-sizing: border-box !important;
     box-sizing: border-box !important;
-    margin-left: 70px !important;
-    margin-bottom: 5px !important;
+    margin: 0 0 7px 0 !important;
     width: 530px !important;
-    height: 30px !important;
-    text-align: center !important;
+    height: auto !important;
 }
 
 .pushbully-button {
     position: relative !important;
-    margin: 0 0 10px 5px !important;
-    padding: 5px 10px 5px !important;
+    margin: 0 3px !important;
+    padding: 4px 9px 5px 9px !important;
 }
-
-    .pushbully-button.left {
-        float: left !important;
-    }
-
-    .pushbully-button.right {
-        float: right !important;
-    }
 
     .pushbully-button:enabled {
         cursor: pointer !important;
@@ -34,28 +25,40 @@
         cursor: auto;
     }
 
-#refresh-boxes-button {
+#select-all-button {
+    float: left !important;
     margin-left: 0 !important;
 }
 
-    #refresh-boxes-button:hover {
-        background-color: #3498db !important;
+    #select-all-button:hover:enabled {
+        background-color: #9b59b6 !important;
     }
 
-#delete-all-button:hover:enabled {
-    background-color: #e67e22 !important;
-}
-
-#select-all-button:hover:enabled {
-    background-color: #9b59b6 !important;
-}
-
 #delete-selected-button {
+    float: left !important;
     margin-right: 0 !important;
 }
 
     #delete-selected-button:hover:enabled {
         background-color: red !important;
+    }
+
+
+#delete-all-button {
+    float: right !important;
+}
+
+    #delete-all-button:hover:enabled {
+        background-color: #e67e22 !important;
+    }
+
+#refresh-boxes-button {
+    float: right !important;
+    margin-right: 0 !important;
+}
+
+    #refresh-boxes-button:hover {
+        background-color: #3498db !important;
     }
 
 .standard-push-icon {
@@ -72,11 +75,11 @@ div.push.checked > .standard-push-icon.checkbox:before {
 }
 
 div.push.selected > .panel {
-    border: 2px solid blue !important;
+    border: 2px solid #59ab46 !important;
 }
 
 div.push.selected.checked > .panel {
-    border: 2px solid purple !important;
+    border: 2px solid rgb(155, 89, 182) !important;
 }
 
 div.push > .panel {
@@ -105,4 +108,11 @@ div.push.checked > .standard-push-icon.checkbox {
 div.push.checked > .push-close,
 div.push.checked > .push-share {
     color: transparent !important;
+}
+
+div.note {
+    float: right !important;
+    width: 530px !important;
+    margin: 0 0 0 0 !important;
+    top: 1500px !important;
 }
