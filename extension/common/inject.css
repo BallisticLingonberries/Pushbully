@@ -14,7 +14,7 @@
 .pushbully-button {
     position: relative !important;
     margin: 0 3px !important;
-    padding: 4px 9px 5px 9px !important;
+    padding: 5px 9px !important;
 }
 
     .pushbully-button:enabled {
@@ -22,12 +22,13 @@
     }
 
     .pushbully-button:disabled {
-        cursor: auto;
+        cursor: auto !important;
     }
 
 #select-all-button {
     float: left !important;
     margin-left: 0 !important;
+    min-width: 111px !important;
 }
 
     #select-all-button:hover:enabled {
@@ -37,6 +38,7 @@
 #delete-selected-button {
     float: left !important;
     margin-right: 0 !important;
+    min-width: 154px !important;
 }
 
     #delete-selected-button:hover:enabled {
@@ -74,14 +76,6 @@ div.push.checked > .standard-push-icon.checkbox:before {
     content: "\f003" !important;
 }
 
-div.push.selected > .panel {
-    border: 2px solid #59ab46 !important;
-}
-
-div.push.selected.checked > .panel {
-    border: 2px solid rgb(155, 89, 182) !important;
-}
-
 div.push > .panel {
     border: 2px solid transparent !important;
 }
@@ -104,6 +98,10 @@ div.push.checked > .standard-push-icon.checkbox {
         background-color: #ecf0f1 !important;
         border: 2px solid red !important;
     }
+
+div.push.selected > .panel {
+    border: 2px solid #59ab46 !important;
+}
 
 div.push.checked > .push-close,
 div.push.checked > .push-share {

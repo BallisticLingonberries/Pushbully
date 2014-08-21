@@ -1,5 +1,3 @@
-//I WILL GET THIS!
-
 var deleteCounter = 0,
     logAll = true,
     lastKeys = '',
@@ -8,7 +6,7 @@ var deleteCounter = 0,
     btnSelectAll,
     btnDeleteAll,
     btnDeleteSelected,
-    middleDiv, pushes
+    middleDiv, pushes,
 
 log = function (text, bImportant) {
 
@@ -58,6 +56,8 @@ getPushes = function (bChecked, bNoInit) {
 
     var cPushes = middleDiv.getElementsByClassName('push');
 
+    pushes = cPushes;
+
     if (bNoInit === null || !bNoInit) {
 
         setProcessing(true, 'getPushes');
@@ -90,7 +90,7 @@ getPushes = function (bChecked, bNoInit) {
 
                 initializePush(element, i);
 
-                log('getPush: Had to initialize push.');
+                log('getPush: Had to initialize pushes[' + i + ']');
 
             }
 
@@ -102,9 +102,13 @@ getPushes = function (bChecked, bNoInit) {
 
     cPushes = middleDiv.getElementsByClassName('push pushbully' + (bChecked ? ' checked' : ''));
 
-    pushes = cPushes;
-
     return cPushes;
+
+},
+
+getSelectedPushes = function () {
+
+    return middleDiv.getElementsByClassName('push selected');
 
 },
 
@@ -174,7 +178,9 @@ dcDoCheck = function (elem, bCheck) {
 
 },
 
-checkPush = function (push, bCheck) {
+checkPush = function (push, bCheck, index) {
+
+    if (index) { log('checkPush: Index = ' + index); }
 
     var bIsChecked = (push.classList.contains('checked')),
         bToCheck = null; //I want to make sure this is null...
@@ -221,68 +227,53 @@ checkPush = function (push, bCheck) {
 
 },
 
-propagatePush = function (iCount) {
+propagatePush = function (iCount, aiIndexes, bQueue) {
 
     if (!iCount) { return; }
 
     var bDeleted = (iCount < 0);
 
-    if (bDeleted) {
-
-        // updateOurButtons(iCount);
-
-        setDelay(refreshCBoxes, 100);
-
-        return;//Don't know how to handle deletion yet
-
-    }
+    if (bDeleted && aiIndexes === null) { return; }
+    if (bQueue && aiIndexes.length < 1) { return; }
 
     log('PropagatePush: Push ' + (bDeleted ? 'deletion' : 'addition') + ' propagation  initiated...');
 
     setProcessing(true, 'propagate');
 
-    var pushes = getPushes(true, false);
+    var cPushes = getPushes(true, false);
 
-    if (pushes.length < 1) {
+    if (cPushes.length < 1) {
 
         setProcessing(false, 'propagate');
 
         log('PropagatePush: No need to propagate; no checked pushes. Resetting checkboxes...');
 
-        setDelay(refreshCBoxes, 200);
+        setDelay(refreshCBoxes, 100);
 
         return;
 
     }
 
-    var b1Checked, b2Checked;
+    var pToIsChecked, pFromIsChecked;
 
-    var prop = function (push1, push2) {
+    var prop = function (pFrom, pTo, index) {
 
-        if (push1 === null || !push1) {
+        if (!pTo || pTo === null) { return; }
+        else if (!pFrom || pFrom === null) {
 
-            return;
-
-        }
-
-        if (push2 === null || !push2) {
-
-            checkPush(push1, false);
+            checkPush(pTo, false, index);
 
             return;
 
         }
 
-        b1Checked = push1.classList.contains('checked');
-        b2Checked = push2.classList.contains('checked');
+        pToIsChecked = pTo.classList.contains('checked');
+        pFromIsChecked = pFrom.classList.contains('checked');
 
-        if (b1Checked === b2Checked) {
+        if (pToIsChecked === pFromIsChecked) { return; }
+        else {
 
-            return;
-
-        } else {
-
-            checkPush(push1, b2Checked);
+            checkPush(pTo, pFromIsChecked, index);
 
             return;
 
@@ -290,31 +281,29 @@ propagatePush = function (iCount) {
 
     }, i;
 
-    pushes = getPushes(false, true);
+    cPushes = getPushes(false, true);
 
-    //if (bDeleted) {
-
-    //     //Dunno how to handle this yet
-
-    //    for (i = 0; i < pushes.length; i++) { //Push was deleted
-
-    //        prop(pushes[i], pushes[i + iCount]);
-
-    //    }
-
-    //} 
-
-    if (!bDeleted) {//Push was added
+    if (!bDeleted) {
 
         for (i = 0; i < iCount; i++) {
 
-            initializePush(pushes[i], i);
+            initializePush(cPushes[i], i);
 
         }
 
-        for (i = pushes.length - 1; i > -1; i--) {
+        for (i = cPushes.length - 1; i > -1; i--) {
 
-            prop(pushes[i], pushes[i - iCount]);
+            prop(cPushes[i - iCount], cPushes[i], i);
+
+        }
+
+    } else {
+
+        for (i = aiIndexes + 1; i < cPushes.length    ; i++) {
+
+            prop(cPushes[i], cPushes[i - 1], i);
+
+            //log('settings pushes[' + (i - iCount) + '] to pushes[' + i + ']');
 
         }
 
@@ -322,19 +311,24 @@ propagatePush = function (iCount) {
 
     setProcessing(false, 'propagate');
 
-    updateOurButtons();
+    updateOurButtons(iCount);
 
     log('PropagatePush: Push ' + (bDeleted ? 'deletion' : 'addition') + ' propagation  complete.');
 
 },
 
+panelClick = function () {
+
+    selectPush(this.parentElement);
+
+},
 closeButtonClick = function () {
 
     if (bProcessing) { return; }
 
     log('Close button clicked');
 
-    propagatePush(-1);
+    propagatePush(-1, parseInt(this.parentElement.getAttribute('index')), false);
 
 },
 getCBoxFromPush = function (push) {
@@ -343,6 +337,10 @@ getCBoxFromPush = function (push) {
 
 },
 getClsBtnFromPush = function (push) {
+
+    push = push || getSelectedPushes()[0];
+
+    if (!push || push === null) { return null; }
 
     return push.getElementsByClassName('push-close')[0];
 
@@ -367,13 +365,11 @@ initializePush = function (push, indx, bNoUncheck) {
     var cBox = getCBoxFromPush(push),
         closeButton = getClsBtnFromPush(push);
 
-    if ((cBox === null) || (closeButton === null)) {
-
-        return false;
-
-    }
+    if ((cBox === null) || (closeButton === null)) { return false; }
 
     push.classList.add('pushbully');
+
+    push.setAttribute('index', indx);
 
     initializeCBox(cBox);
 
@@ -383,6 +379,11 @@ initializePush = function (push, indx, bNoUncheck) {
 
     closeButton.removeEventListener('click', closeButtonClick, false);
     closeButton.addEventListener('click', closeButtonClick, false);
+
+    var panel = push.getElementsByClassName('panel')[0];
+
+    panel.removeEventListener('click', panelClick, true);
+    panel.addEventListener('click', panelClick, true);
 
     return true;
 
@@ -441,6 +442,14 @@ refreshCBoxes = function () {
         log('RefreshBoxes: Push frame not found. Stopping box inject...');
 
         return false;
+
+    }
+
+    var selected = getSelectedPushes()[0];
+
+    if (selected && selected !== null) {
+
+        selected.classList.remove('selected');
 
     }
 
@@ -631,9 +640,13 @@ deleteSelected = function () {
 
         return 0;
 
-    } if (pushes.length === allPushes.length) {
+    }
+
+    if (pushes.length === allPushes.length) {
 
         deleteAll(false, true, true);
+
+        return;
 
     }
 
@@ -689,6 +702,7 @@ btnDeleteSelectedClick = function () {
     deleteSelected();
 
 },
+
 injectButtons = function () {
 
     log('Injecting buttons...');
@@ -742,6 +756,7 @@ injectButtons = function () {
     btnRefreshBoxes = createElem();
     btnRefreshBoxes.innerText = 'Refresh Boxes';
     btnRefreshBoxes.className = btnClassName;
+    btnRefreshBoxes.tabIndex = 1;
     btnRefreshBoxes.id = 'refresh-boxes-button';
     btnRefreshBoxes.title = 'Sometimes pushes won\'t have checkboxes on them. Click this to fix that.';
     btnRefreshBoxes.addEventListener('click', btnRefreshBoxesClick, false);
@@ -750,6 +765,7 @@ injectButtons = function () {
     btnDeleteAll = createElem();
     btnDeleteAll.innerText = 'Delete All Pushes';
     btnDeleteAll.className = btnClassName;
+    btnDeleteAll.tabIndex = 2;
     btnDeleteAll.id = 'delete-all-button';
     btnDeleteAll.title = 'Click to delete all of your pushes.';
     btnDeleteAll.addEventListener('click', btnDeleteAllClick, false);
@@ -758,6 +774,7 @@ injectButtons = function () {
     btnSelectAll = createElem();
     btnSelectAll.innerText = 'Select All';
     btnSelectAll.className = btnClassName;
+    btnSelectAll.tabIndex = 3;
     btnSelectAll.id = 'select-all-button';
     btnSelectAll.setAttribute('select', true);
     btnSelectAll.addEventListener('click', btnSelectAllClick, false);
@@ -766,6 +783,7 @@ injectButtons = function () {
     btnDeleteSelected = createElem();
     btnDeleteSelected.innerText = 'Delete Selected';
     btnDeleteSelected.className = btnClassName;
+    btnDeleteSelected.tabIndex = 4;
     btnDeleteSelected.id = 'delete-selected-button';
     btnDeleteSelected.title = 'Click to delete all of the pushes you have selected.';
     btnDeleteSelected.addEventListener('click', btnDeleteSelectedClick, false);
@@ -841,11 +859,7 @@ attachedClick = function (e) {
 
 attachToClick = function (elem) {
 
-    if (elem === null) {
-
-        return false;
-
-    }
+    if (elem === null) { return false; }
 
     var hrf = elem.getAttribute('href');
 
@@ -909,97 +923,192 @@ totalReset = function () {
 
 },
 
-selectedIndex = -1,
+selectPush = function (sPush) {
 
-selectPush = function (sDirection, bDown) {
+    if (!pushes.length) {
 
-    var currentPush = pushes[selectedIndex];
+        getPushes();
 
-    if (selectedIndex < 0) {
+    }
 
-        selectedIndex = 0;
+    var selected = getSelectedPushes(),
+        currentPush = selected[0],
+        newPush = null;
 
-    } else {
+    if (sPush !== 'current' && selected && selected !== null) {
 
-        switch (sDirection) {
+        for (var i = 0; i < selected.length; i++) { //In case more than one push are selected for some reason
 
-            case 'up':
-
-                selectedIndex--;
-
-                break;
-
-            case 'down':
-
-                selectedIndex++;
-
-                break;
-
-            case 'current':
-
-                if (currentPush !== null) {
-
-                    checkPush(currentPush, null);
-
-                    return;
-
-                }
-
-                break;
-
-        }
-
-        if (currentPush !== null) {
-
-            currentPush.classList.remove('selected');
+            selected[i].classList.remove('selected');
 
         }
 
     }
 
-    currentPush = pushes[selectedIndex];
+    if (!currentPush && (sPush && sPush.nodeType !== 1)) {
 
-    currentPush.classList.add('selected');
+        newPush = pushes[0];
 
-    if (selectedIndex > 2) {
+    } else {
 
-        window.scrollTo(0, selectedIndex * 86);
+        switch (sPush) {
+
+            case 'up':
+                newPush = currentPush.previousSibling || currentPush;
+
+                break;
+
+            case 'down':
+                newPush = currentPush.nextSibling || currentPush;
+
+                break;
+
+            case 'current':
+                checkPush(currentPush, null);
+
+                return;
+
+            default:
+                newPush = sPush;
+
+                break;
+
+        }
+
+    }
+
+    if (!newPush || newPush === null || newPush === currentPush) { return; }
+
+    newPush.classList.add('selected');
+
+    var indx = parseInt(newPush.getAttribute('index'));
+
+    if ((sPush && sPush.nodeType !== 1) && indx > 3 && indx < pushes.length - 5) {
+
+        window.scrollTo(0, indx * 100);
 
     }
 
 },
 
+checkShouldHandle = function () {
+
+    var pFrame = getPushFrameDiv();
+
+    if (!pFrame || pFrame === null) { return false; }
+    if (document.activeElement.parentElement === pFrame) { return false; }
+    if (!getButtonsDiv()) { return false; }
+
+    return true;
+
+},
+
 handleKeyUp = function (event) {
 
-    if (event.keyCode === 13) {
+    if (!checkShouldHandle() || !getSelectedPushes()) { return; }
 
-        selectPush('current', false)
+    if (event.keyCode === 13) { //enter
+
+        event.preventDefault();
+        event.cancelBubble = true;
+
+        selectPush('current');
 
     }
 
-}
+},
+
+lastIndex = 0,
 
 handleKeyDown = function (event) {
 
-    if (!getButtonsDiv()) { return; }
+    if (!checkShouldHandle()) { return; }
 
-    //if (!event.ctrlKey) {
+    if (event.ctrlKey && event.shiftKey) {
 
-    //    return;
+        switch (event.keyCode) {
 
-    //}
+            case 65: //Ctrl+Shift+A - select all
+                btnSelectAll.click();
 
-    switch (event.keyCode) {
+                break;
 
-        case 38:
-            selectPush('up', true);
+        }
 
-            break;
+    } else if (event.shiftKey && event.altKey) {
 
-        case 40:
-            selectPush('down', true);
+        switch (event.keyCode) {
 
-            break;
+            case 46: //Alt+Shift+Delete - delete all
+                btnDeleteAll.click();
+
+                break;
+
+        }
+
+    } else if (event.ctrlKey) {
+
+        switch (event.keyCode) {
+
+            case 46: //Ctrl+Delete - delete selected
+                btnDeleteSelected.click();
+
+                break;
+
+        }
+
+    } else {
+
+        switch (event.keyCode) {
+
+            case 38: //up
+                selectPush('up');
+
+                break;
+
+            case 40: //down
+                selectPush('down');
+
+                break;
+
+            case 46: //delete
+                var cPush = getSelectedPushes()[0],
+                    cButton = getClsBtnFromPush(cPush),
+                    nextPush;
+
+                if (!cPush || cPush === null) { return; }
+                if (!cButton || cButton === null) { return; }
+
+                if (nextPush && nextPush !== null) {
+
+                    nextPush.classList.add('selected');
+
+                }
+
+                cPush.classList.remove('selected');
+
+                cButton.click();
+
+                lastIndex = parseInt(cPush.getAttribute('index'));
+
+                setDelay(function () {
+
+                    try {
+
+                        selectPush(pushes[
+                            (lastIndex
+                                ? lastIndex - 1
+                                : lastIndex
+                            )
+                        ]);
+
+                    } catch (except) { }
+
+                }, 300);
+
+                break;
+
+        }
 
     }
 
@@ -1092,13 +1201,5 @@ initialize = function () {
     window.addEventListener('keydown', handleKeyDown, true);
 
 };
-
-//TODO: Add confirmation to deleteselected.
-
-//TODO: Add index checker for deletion handler (initializepush).
-
-//TODO: Figure out why mutation event isn't firing.
-
-//Go to sleep earlier
 
 window.onload = initialize();
