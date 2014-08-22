@@ -6,9 +6,9 @@ var deleteCounter = 0,
     btnSelectAll,
     btnDeleteAll,
     btnDeleteSelected,
-    middleDiv, pushes,
+    middleDiv, pushes;
 
-log = function (text, bImportant) {
+var log = function (text, bImportant) {
 
     if (logAll || bImportant) {
 
@@ -37,7 +37,7 @@ setProcessing = function (bState, key) {
         bProcessing = newVal;
 
         log('bProcessing is now ' + newVal.toString().toUpperCase() +
-            ' because "' + key + '" ' + (bState ? 'began' : 'finished') + ' operations.'
+        ' because "' + key + '" ' + (bState ? 'began' : 'finished') + ' operations.'
         );
 
     } else if (bState) {
@@ -112,23 +112,34 @@ getSelectedPushes = function () {
 
 },
 
-updateOurButtons = function (iRelativeCount) {
+updateOurButtons = function (bReset) {
 
-    iRelativeCount = iRelativeCount || 0;
+    bReset = bReset || false;
 
     log('Updating our buttons...');
 
-    var pushCountAll = getPushes(false, false).length,// + iRelativeCount,
-        pushCountChecked = getPushes(true, true).length,
+    var pushCountAll, pushCountChecked;
 
-        bIsEqual = (pushCountAll === pushCountChecked),
+    if (bReset) {
+
+        pushCountAll = 0;
+        pushCountChecked = 0;
+
+    } else {
+
+        pushCountAll = getPushes(false, false).length;
+        pushCountChecked = getPushes(true, true).length;
+
+    }
+
+    var bIsEqual = (pushCountAll === pushCountChecked),
         bStrDeselect = ((pushCountAll > 0) && bIsEqual);
 
     btnSelectAll.setAttribute('select', !bStrDeselect);
 
     var sText = (bStrDeselect
-        ? 'Deselect All'
-        : 'Select All'
+    ? 'Deselect All'
+    : 'Select All'
     );
 
     sText += ((pushCountAll && !bIsEqual)
@@ -311,7 +322,7 @@ propagatePush = function (iCount, aiIndexes, bQueue) {
 
     setProcessing(false, 'propagate');
 
-    updateOurButtons(iCount);
+    updateOurButtons();
 
     log('PropagatePush: Push ' + (bDeleted ? 'deletion' : 'addition') + ' propagation  complete.');
 
@@ -382,8 +393,8 @@ initializePush = function (push, indx, bNoUncheck) {
 
     var panel = push.getElementsByClassName('panel')[0];
 
-    panel.removeEventListener('click', panelClick, true);
-    panel.addEventListener('click', panelClick, true);
+    panel.removeEventListener('click', panelClick, false);
+    panel.addEventListener('click', panelClick, false);
 
     return true;
 
@@ -445,13 +456,7 @@ refreshCBoxes = function () {
 
     }
 
-    var selected = getSelectedPushes()[0];
-
-    if (selected && selected !== null) {
-
-        selected.classList.remove('selected');
-
-    }
+    unselectAllPushes();
 
     log('RefreshBoxes: Push frame found. About to inject boxes...');
 
@@ -540,12 +545,12 @@ deleteAll = function (prompt, isLoop, isLastCheck) {
     } else if (prompt && (pushes.length > 3)) {
 
         var conf = confirm('Are you sure you wish to delete all ' +
-                (pushes.length > 49
-                    ? '50+'
-                    : pushes.length
-                ) +
-                ' pushes?\n\nThis cannot be interrupted nor undone.'
-            );
+        (pushes.length > 49
+        ? '50+'
+        : pushes.length
+        ) +
+        ' pushes?\n\nThis cannot be interrupted nor undone.'
+        );
 
         if (!conf) {
 
@@ -609,10 +614,10 @@ selectAll = function () {
     setProcessing(false, 'selectAll');
 
     log(counter + ' checkboxes ' +
-        (bSelect
-            ? 'checked'
-            : 'unchecked'
-        )
+    (bSelect
+    ? 'checked'
+    : 'unchecked'
+    )
     );
 
     updateOurButtons();
@@ -709,7 +714,7 @@ injectButtons = function () {
 
     var pushDiv = getPushFrameDiv();
 
-    if (pushDiv === null) {
+    if (!pushDiv || pushDiv === null) {
 
         log('InjectButtons: PushFrame div not found. Stopping inject...');
 
@@ -719,7 +724,7 @@ injectButtons = function () {
 
     var buttonsDiv = getButtonsDiv();
 
-    if (buttonsDiv !== null) {
+    if (buttonsDiv && buttonsDiv !== null) {
 
         log('InjectButtons: Buttons div already exists. Deleting it...');
 
@@ -748,6 +753,8 @@ injectButtons = function () {
     divButtons = createElem('div');
     divButtons.id = 'pushbully-button-box';
     pushDiv.insertAdjacentElement('afterEnd', divButtons);
+
+    console.log(divButtons);
 
     //BUTTONS AND CHECKBOXES
     btnClassName = 'btn pushbully-button';
@@ -818,28 +825,17 @@ doInjection = function () {
 
     log('Injection initiated...');
 
-    var bChanged = false;
+    if (!injectButtons()) { return false; }
 
-    if (injectButtons() | refreshCBoxes()) {
+    refreshCBoxes();
 
-        bChanged = true;
+    log('DoInjection: Injection complete.');
 
-    }
-
-    if (bChanged) {
-
-        log('DoInjection: Injection complete.');
-
-    } else {
-
-        log('DoInjection: Injection unnecessary or unsuccessful.');
-
-    }
-
-    return bChanged;
+    return true;
 
 },
 
+/*
 attachedClick = function (e) {
 
     var pref = this.getAttribute('pref');
@@ -856,25 +852,22 @@ attachedClick = function (e) {
     setDelay(totalReset, 500);
 
 },
-
 attachToClick = function (elem) {
 
-    if (elem === null) { return false; }
+    if (!elem || elem === null) { return false; }
 
     var hrf = elem.getAttribute('href');
 
-    if (hrf === null || hrf === '') {
-
-        return false;
-
-    }
+    if (!hrf || hrf === null) { return false; }
+    else if (hrf.indexOf('/device?') > -1) { return false; }
+    else if (hrf.indexOf('/friend?') > -1) { return false; }
 
     elem.removeAttribute('href');
 
     elem.setAttribute('pref', hrf);
 
-    elem.removeEventListener('click', attachedClick, true);
-    elem.addEventListener('click', attachedClick, true);
+    elem.removeEventListener('click', attachedClick, false);
+    elem.addEventListener('click', attachedClick, false);
 
     return true;
 
@@ -883,43 +876,93 @@ attachToButtons = function () {
 
     log('AttachToButtons: Attaching click events to page change anchors.');
 
-    var leftDiv = document.getElementById('device-and-friend-list'),
-        btns = leftDiv.getElementsByClassName('nota'),
-        counter = 0;
+    try {
 
-    for (var t = 0; t < btns.length; t++) {
+        var leftDiv = document.getElementById('device-and-friend-list');
 
-        if (attachToClick(btns[t], attachedClick)) {
+        if (!leftDiv || leftDiv === null) { return 0; }
 
-            counter++;
+        var btns = leftDiv.getElementsByClassName('nota');
+
+        if (!btns || btns === null) { return 0; }
+
+        var counter = 0;
+
+        for (var t = 0; t < btns.length; t++) {
+
+            try {
+
+                if (attachToClick(btns[t], attachedClick)) {
+
+                    counter++;
+
+                }
+
+            } catch (except) {
+
+                log('Error attaching click event to buttons[' + t + ']');
+
+                console.log(except);
+
+            }
+
+        }
+
+        var logo = document.getElementsByClassName('logo')[0];
+
+        attachToClick(logo, attachedClick);
+
+        log('AttachToButtons: Finished attaching ' + counter + ' click events to anchors.');
+
+        return counter;
+
+    } catch (except) {
+
+        log('AttachToButtons: An error occurred while trying to attach buttons');
+
+        console.log(except);
+
+        return 0;
+
+    }
+
+},
+*/
+
+
+totalReset = function () {
+
+    //attachToButtons();
+
+    if (getButtonsDiv()) {
+
+        updateOurButtons(true);
+
+    }
+
+    setDelay(function () {
+
+        doInjection();
+
+    }, 500);
+
+    log('TotalReset: Complete reset initiated...');
+
+},
+
+unselectAllPushes = function () {
+
+    var selected = getSelectedPushes();
+
+    if (selected && selected !== null) {
+
+        for (var i = 0; i < selected.length; i++) { //In case more than one push are selected for some reason
+
+            selected[i].classList.remove('selected');
 
         }
 
     }
-
-    var logo = document.getElementsByClassName('logo')[0];
-
-    attachToClick(logo, attachedClick);
-
-    log('AttachToButtons: Finished attaching ' + counter + ' click events to anchors.');
-
-    return counter;
-
-},
-
-totalReset = function () {
-
-    setDelay(function () {
-
-        log('TotalReset: Complete reset initiated...');
-
-        setDelay(doInjection, 500);
-
-        attachToButtons();
-
-        log('TotalReset: Reset completed.');
-
-    }, 500);
 
 },
 
@@ -932,8 +975,8 @@ selectPush = function (sPush) {
     }
 
     var selected = getSelectedPushes(),
-        currentPush = selected[0],
-        newPush = null;
+    currentPush = selected[0],
+    newPush = null;
 
     if (sPush !== 'current' && selected && selected !== null) {
 
@@ -1007,6 +1050,8 @@ handleKeyUp = function (event) {
 
     if (!checkShouldHandle() || !getSelectedPushes()) { return; }
 
+    if (event.ctrlKey) { return; }
+
     if (event.keyCode === 13) { //enter
 
         event.preventDefault();
@@ -1019,6 +1064,24 @@ handleKeyUp = function (event) {
 },
 
 lastIndex = 0,
+
+launchSelectedLink = function () {
+
+    var selected = getSelectedPushes();
+
+    if (!selected || selected === null) { return; }
+
+    var anchor = selected[0].getElementsByClassName('text')[0];
+
+    if (!anchor || anchor === null) { return; }
+
+    anchor = anchor.children[0];
+
+    if (anchor.nodeName.toLowerCase() !== 'a') { return; }
+
+    window.open(anchor.getAttribute('href'));
+
+},
 
 handleKeyDown = function (event) {
 
@@ -1055,11 +1118,21 @@ handleKeyDown = function (event) {
 
                 break;
 
+            case 13: //Enter
+                launchSelectedLink();
+
+                break;
+
         }
 
     } else {
 
         switch (event.keyCode) {
+
+            case 27: //Escape
+                unselectAllPushes();
+
+                break;
 
             case 38: //up
                 selectPush('up');
@@ -1104,6 +1177,8 @@ handleKeyDown = function (event) {
 
                     } catch (except) { }
 
+                    updateOurButtons();
+
                 }, 300);
 
                 break;
@@ -1113,93 +1188,123 @@ handleKeyDown = function (event) {
     }
 
 },
-
 initialize = function () {
 
     middleDiv = document.getElementsByClassName('middle-list')[0];
 
-    totalReset(true);
+    totalReset();
 
-    var MyObserver = window.MutationObserver ||
-        window.WebKitMutationObserver ||
-        new MutationObserver();
+    try {
 
-    var observer = new MyObserver(function (mutations) {
+        var MyObserver = window.MutationObserver || (
+                window.WebKitMutationObserver ||
+                    new MutationObserver());
 
-        if (bProcessing) {
+        var observer = new MyObserver(function (mutations) {
 
-            log('Mutation blocked because bProcessing === true');
+            var totalCount = 0, count, i, node;
 
-            return;
+            mutations.forEach(function (mutation) {
 
-        }
+                if (mutation.addedNodes) {
 
-        var count, i, node;
+                    count = 0;
 
-        mutations.forEach(function (mutation) {
+                    for (i = 0; i < mutation.addedNodes.length; i++) {
 
-            if (mutation.addedNodes) {
+                        node = mutation.addedNodes[i];
 
-                count = 0;
+                        if (node.className === 'panel') {
 
-                for (i = 0; i < mutation.addedNodes.length; i++) {
+                            log('Mutation: New push panel found. Propogating...');
 
-                    node = mutation.addedNodes[i];
+                            count++;
 
-                    if (node.className === 'panel') {
+                        }
 
-                        log('Mutation: New push panel found. Propogating...');
+                    }
 
-                        count++;
+                    if (count) {
+
+                        totalCount += count;
+
+                        if (bProcessing) {
+
+                            log('Mutation blocked because bProcessing === true');
+
+                            return;
+
+                        }
+
+                        propagatePush(totalCount);
+
+                        totalCount = 0;
 
                     }
 
                 }
 
-                if (count) { propagatePush(count); }
-
-            }
+            });
 
         });
 
-    });
+        if (observer) {
 
-    if (observer) {
+            observer.observe(middleDiv, {
 
-        observer.observe(middleDiv, {
+                childList: true,
+                subtree: true
 
-            childList: true,
-            subtree: true
+            });
 
-        });
+        }
+
+    } catch (except) {
+
+        log('For some reason observer errored.');
+
+        console.log(except);
 
     }
 
     log('Initialize: Attached mutation observer to listen for new pushes.');
 
-    window.addEventListener('hashchange', function () {
+    var H = window.history,
+        oldPushState = H.pushState;
 
-        log('Hash: Hash changed. Resetting...');
+    H.pushState = function (state) {
 
-        totalReset(false);
+        log('PushState: H.pushState state changed. Resetting...');
 
-    });
+        if (typeof H.onpushstate === 'function') {
 
-    log('Initialize: Attached hash changed listener to listen for page change.');
+            H.onpushstate({ state: state });
 
-    window.onpopstate = function () {
+        }
 
-        log('Pop: Pop state changed. Resetting...');
+        setDelay(totalReset, 200);
 
-        totalReset(false);
+        return oldPushState.apply(H, arguments);
 
     };
 
+    window.onhashchange =
+        window.onpopstate =
+        window.onpushstate = function () {
+
+            setDelay(totalReset, 200);
+
+        };
+
     log('Initialize: Attached pop state listener to listen for page change.');
 
-    window.addEventListener('keyup', handleKeyUp, true);
-    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyUp, false);
+    window.addEventListener('keydown', handleKeyDown, false);
 
 };
 
-window.onload = initialize();
+initialize();
+
+//TODO: Fine-tune hotkey support (generated / more consistency / etc.)
+
+//TODO: Create options page (add ALL the advanced mo'fo'in' options)

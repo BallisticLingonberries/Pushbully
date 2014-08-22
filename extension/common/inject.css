@@ -42,7 +42,7 @@
 }
 
     #delete-selected-button:hover:enabled {
-        background-color: red !important;
+        background-color: #E74C3C !important;
     }
 
 
@@ -85,22 +85,22 @@ div.push > .standard-push-icon {
 }
 
 div.push.checked > .panel {
-    border: 2px solid red !important;
+    border: 2px solid #E74C3C !important;
 }
 
 div.push.checked > .standard-push-icon.checkbox {
     background-color: transparent !important;
-    color: red !important;
-    border: 2px dotted red !important;
+    color: #E74C3C !important;
+    border: 2px dotted #E74C3C !important;
 }
 
     div.push.checked > .standard-push-icon.checkbox:hover {
         background-color: #ecf0f1 !important;
-        border: 2px solid red !important;
+        border: 2px solid#E74C3C !important;
     }
 
 div.push.selected > .panel {
-    border: 2px solid #59ab46 !important;
+    outline: solid 4px #59ab46 !important;
 }
 
 div.push.checked > .push-close,
