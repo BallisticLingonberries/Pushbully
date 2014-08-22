@@ -16,7 +16,8 @@
         {
             "matches": [ "*://*.pushbullet.com/*" ],
             "css": [ "common/inject.css" ],
-            "js": [ "content-script.js" ]
+            "js": [ "content-script.js" ],
+            "all_frames": true
         }
     ],
     "web_accessible_resources": [ "common/inject.js" ]
