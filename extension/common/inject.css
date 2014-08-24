@@ -74,7 +74,7 @@ div#pushbully-button-box {
     background-repeat: no-repeat !important;
 }
 
-.pushbully .panel {
+div.pushbully div.panel {
     -moz-transition: all ease .3s !important;
     -o-transition: all ease .3s !important;
     -webkit-transition: all ease .3s !important;
@@ -102,13 +102,13 @@ div#pushbully-button-box {
 div.note {
     float: right !important;
     width: 530px !important;
-    margin: 0 0 0 0 !important;
+    margin: 0 !important;
     top: 1500px !important;
 }
 
 /*CHECKBOXES*/
 
-.pushbully .standard-push-icon.checkbox:hover ::before {
+div.pushbully i.standard-push-icon.checkbox:hover ::before {
     -moz-transition: all ease 3s !important;
     -o-transition: all ease 3s !important;
     -webkit-transition: all ease 3s !important;
