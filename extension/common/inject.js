@@ -256,8 +256,12 @@ propagatePush = function (iCount, aiIndexes, bQueue) {
     log('PropagatePush: Push ' + (bDeleted ? 'deletion' : 'addition') + ' propagation  complete.');
 },
 
-panelClick = function () {
+panelClick = function (event) {
+
+    if (event.target.classList.contains('push-check')) { return; }
+
     selectPush(this.parentElement);
+
 },
 closeButtonClick = function () {
     if (bProcessing) { return; }
@@ -292,17 +296,6 @@ initializeCBox = function (cBox) {
         cBox.addEventListener('click', checkboxClick, false);
 
         cBox.classList.add('checkbox');
-
-        if (cBox.classList.contains('gravatar')) { return; }
-
-        var bg = window.getComputedStyle(cBox).backgroundColor;
-
-        if (bg === 'transparent') { return; }
-
-        bg += ' !important';
-
-        //cBox.style.borderColor = bg;
-        //cBox.style.backgroundColor = bg;
     }
 },
 initializePush = function (push, indx, bNoUncheck) {

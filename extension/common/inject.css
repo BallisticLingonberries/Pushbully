@@ -12,6 +12,7 @@ div#pushbully-button-box {
 }
 
 /*BUTTONS*/
+
 .pushbully-button {
     position: relative !important;
     margin: 0 3px !important;
@@ -75,23 +76,23 @@ div#pushbully-button-box {
 }
 
 div.pushbully div.panel {
-    -moz-transition: all ease .3s !important;
-    -o-transition: all ease .3s !important;
-    -webkit-transition: all ease .3s !important;
-    transition: all ease .3s !important;
+    -moz-transition: all .3s ease !important;
+    -o-transition: all .3s ease !important;
+    -webkit-transition: all .3s ease !important;
+    transition: all .3s ease !important;
 }
 
 .pushbully .panel {
-    border: 2px solid transparent !important;
+    border: 1.5px solid transparent !important;
     outline: solid 4px transparent !important;
 }
 
 .pushbully.checked .panel {
-    border: 2px solid #E74C3C !important;
+    border: 1.5px solid #E74C3C !important;
 }
 
 .pushbully.selected .panel {
-    outline: solid 4px #59ab46 !important;
+    outline: solid 2px #59ab46 !important;
 }
 
 .pushbully.checked .push-close,
@@ -108,11 +109,11 @@ div.note {
 
 /*CHECKBOXES*/
 
-div.pushbully i.standard-push-icon.checkbox:hover ::before {
-    -moz-transition: all ease 3s !important;
-    -o-transition: all ease 3s !important;
-    -webkit-transition: all ease 3s !important;
-    transition: all ease 3s !important;
+div.pushbully i.standard-push-icon.checkbox {
+    -moz-transition: all .3s ease !important;
+    -o-transition: all .3s ease !important;
+    -webkit-transition: all .3s ease !important;
+    transition: all .3s ease !important;
 }
 
 .pushbully .gravatar.checkbox {
@@ -136,21 +137,41 @@ div.pushbully i.standard-push-icon.checkbox:hover ::before {
     content: "\f003" !important;
 }
 
-.pushbully .standard-push-icon {
-    border: 2px solid transparent !important;
-}
-
 .pushbully.checked .standard-push-icon.checkbox,
 .pushbully.checked .standard-push-icon.checkbox:hover {
-    border: 2px dotted #E74C3C !important;
-    color: #E74C3C !important;
-}
-
-.pushbully.checked .standard-push-icon.checkbox {
+    border-style: dotted !important;
     background-color: transparent !important;
+    color: #E74C3C !important;
 }
 
     .pushbully.checked .standard-push-icon.checkbox:hover {
         background-color: #ecf0f1 !important;
         border-style: solid !important;
     }
+
+
+
+.pushbully.checked .standard-push-icon.push-chat {
+    border-color: #E67E22 !important;
+    /*color: #E67E22 !important;*/
+}
+
+.pushbully.checked .standard-push-icon.push-link {
+    border-color: #3498dB !important;
+    /*color: #3498DB !important;*/
+}
+
+.pushbully.checked .standard-push-icon.push-clip {
+    border-color: #E74C3C !important;
+    /*color: #E74C3C !important;*/
+}
+
+.pushbully.checked .standard-push-icon.push-list {
+    border-color: #9B59B6 !important;
+    /*color: #9B59B6 !important;*/
+}
+
+.pushbully.checked .standard-push-icon.push-map {
+    border-color: #F1C40F !important;
+    /*color: #F1C40F !important;*/
+}
