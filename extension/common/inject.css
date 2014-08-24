@@ -1,7 +1,6 @@
 ﻿@charset 'UTF-8';
 
-
-#pushbully-button-box {
+div#pushbully-button-box {
     position: relative !important;
     float: right !important;
     -moz-box-sizing: border-box !important;
@@ -12,10 +11,7 @@
     height: auto !important;
 }
 
-
-
-
-
+/*BUTTONS*/
 .pushbully-button {
     position: relative !important;
     margin: 0 3px !important;
@@ -67,71 +63,7 @@
         background-color: #3498db !important;
     }
 
-
-
-
-
-div.pushbully.checked .gravatar.checkbox,
-div.pushbully .gravatar.checkbox:hover {
-    background-size: 25px !important;
-    background-position: right bottom !important;
-}
-
-div.pushbully .gravatar.checkbox::before {
-    content: none !important;
-}
-
-div.pushbully .standard-push-icon.checkbox:hover::before,
-div.pushbully.checked .standard-push-icon.checkbox::before {
-    content: "\f003" !important;
-}
-
-div.pushbully .panel {
-    border: 2px solid transparent !important;
-}
-
-div.pushbully.checked .panel {
-    border: 2px solid #E74C3C !important;
-}
-
-div.pushbully.selected .panel {
-    outline: solid 4px #59ab46 !important;
-}
-
-div.pushbully .standard-push-icon {
-    border: 2px solid !important;
-}
-
-div.pushbully.checked .standard-push-icon.checkbox,
-div.pushbully.checked .standard-push-icon.checkbox:hover {
-    border: 2px dotted !important;
-    color: #E74C3C !important;
-}
-
-div.pushbully.checked .standard-push-icon.checkbox {
-    background-color: transparent !important;
-}
-
-    div.pushbully.checked .standard-push-icon.checkbox:hover {
-        background-color: #ecf0f1 !important;
-        border-style: solid !important;
-    }
-
-div.pushbully.checked .push-close,
-div.pushbully.checked .push-share {
-    color: transparent !important;
-}
-
-
-
-
-
-div.note {
-    float: right !important;
-    width: 530px !important;
-    margin: 0 0 0 0 !important;
-    top: 1500px !important;
-}
+/*MIDDLE LIST*/
 
 .standard-push-icon {
     -webkit-touch-callout: none !important;
@@ -141,3 +73,84 @@ div.note {
     user-select: none !important;
     background-repeat: no-repeat !important;
 }
+
+.pushbully .panel {
+    -moz-transition: all ease .3s !important;
+    -o-transition: all ease .3s !important;
+    -webkit-transition: all ease .3s !important;
+    transition: all ease .3s !important;
+}
+
+.pushbully .panel {
+    border: 2px solid transparent !important;
+    outline: solid 4px transparent !important;
+}
+
+.pushbully.checked .panel {
+    border: 2px solid #E74C3C !important;
+}
+
+.pushbully.selected .panel {
+    outline: solid 4px #59ab46 !important;
+}
+
+.pushbully.checked .push-close,
+.pushbully.checked .push-share {
+    color: transparent !important;
+}
+
+div.note {
+    float: right !important;
+    width: 530px !important;
+    margin: 0 0 0 0 !important;
+    top: 1500px !important;
+}
+
+/*CHECKBOXES*/
+
+.pushbully .standard-push-icon.checkbox:hover ::before {
+    -moz-transition: all ease 3s !important;
+    -o-transition: all ease 3s !important;
+    -webkit-transition: all ease 3s !important;
+    transition: all ease 3s !important;
+}
+
+.pushbully .gravatar.checkbox {
+    background-position: right bottom !important;
+    border: 2px solid transparent !important;
+    background-color: transparent !important;
+    background-size: contain !important;
+}
+
+    .pushbully.checked .gravatar.checkbox,
+    .pushbully .gravatar.checkbox:hover {
+        background-size: 45% !important;
+    }
+
+.avatar-stack > .checkbox::before {
+    content: none !important;
+}
+
+.pushbully .standard-push-icon.checkbox:hover::before,
+.pushbully.checked .standard-push-icon.checkbox::before {
+    content: "\f003" !important;
+}
+
+.pushbully .standard-push-icon {
+    border: 2px solid transparent !important;
+}
+
+.pushbully.checked .standard-push-icon.checkbox,
+.pushbully.checked .standard-push-icon.checkbox:hover {
+    border: 2px dotted #E74C3C !important;
+    color: #E74C3C !important;
+}
+
+.pushbully.checked .standard-push-icon.checkbox {
+    background-color: transparent !important;
+}
+
+    .pushbully.checked .standard-push-icon.checkbox:hover {
+        background-color: #ecf0f1 !important;
+        border-style: solid !important;
+    }

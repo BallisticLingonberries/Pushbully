@@ -73,8 +73,6 @@ getPushes = function (bChecked, bNoInit) {
         setProcessing(false, 'getPushes');
     }
 
-    syncGravatar();
-
     cPushes = middleDiv.getElementsByClassName('push pushbully' + (bChecked ? ' checked' : ''));
 
     return cPushes;
@@ -269,25 +267,8 @@ closeButtonClick = function () {
     propagatePush(-1, parseInt(this.parentElement.getAttribute('index')), false);
 },
 
-syncGravatar = function () {
-    var gTars = document.getElementsByClassName('gravatar gTar');
-
-    var cTar;
-    for (var i = gTars.length - 1; i > -1; i--) {
-        cTar = gTars[i];
-
-        cTar.previousSibling.setAttribute('style', cTar.getAttribute('style'));
-        cTar.previousSibling.classList.add('gravatar');
-
-        cTar.parentElement.removeChild(cTar);
-    }
-},
-
 getCBoxesFromPush = function (push) {
     return push.getElementsByClassName('standard-push-icon');
-},
-getCBoxFromPush = function (push) {
-    return getCBoxesFromPush(push)[0];
 },
 getClsBtnFromPush = function (push) {
     push = push || getSelectedPushes()[0];
@@ -304,7 +285,7 @@ checkboxClick = function () {
     }
 },
 initializeCBox = function (cBox) {
-    log("initialized: " + cBox.className);
+    log('initialized: ' + cBox.className);
 
     if (!cBox.classList.contains('checkbox')) {
         cBox.removeEventListener('click', checkboxClick, false);
@@ -312,18 +293,16 @@ initializeCBox = function (cBox) {
 
         cBox.classList.add('checkbox');
 
+        if (cBox.classList.contains('gravatar')) { return; }
+
         var bg = window.getComputedStyle(cBox).backgroundColor;
 
         if (bg === 'transparent') { return; }
 
         bg += ' !important';
 
-        cBox.style.borderColor = bg;
-        cBox.style.backgroundColor = bg;
-
-        if (cBox.classList.contains('gTar')) {
-            cBox.classList.add('gravatar');
-        }
+        //cBox.style.borderColor = bg;
+        //cBox.style.backgroundColor = bg;
     }
 },
 initializePush = function (push, indx, bNoUncheck) {
@@ -351,6 +330,7 @@ initializePush = function (push, indx, bNoUncheck) {
     if (bNoUncheck === null || !bNoUncheck) {
         checkPush(push);
     }
+
     return true;
 },
 
@@ -709,50 +689,50 @@ initializePush = function (push, indx, bNoUncheck) {
     /*
     attachedClick = function (e) {
         var pref = this.getAttribute('pref');
-    
+
         this.href = pref;
-    
+
         this.click();
-    
+
         this.removeAttribute('href');
-    
+
         e.preventDefault();
         e.cancelBubble = true;
-    
+
         setDelay(totalReset, 500);
     },
     attachToClick = function (elem) {
         if (!elem || elem === null) { return false; }
-    
+
         var hrf = elem.getAttribute('href');
-    
+
         if (!hrf || hrf === null) { return false; }
         else if (hrf.indexOf('/device?') > -1) { return false; }
         else if (hrf.indexOf('/friend?') > -1) { return false; }
-    
+
         elem.removeAttribute('href');
-    
+
         elem.setAttribute('pref', hrf);
-    
+
         elem.removeEventListener('click', attachedClick, false);
         elem.addEventListener('click', attachedClick, false);
-    
+
         return true;
     },
     attachToButtons = function () {
         log('AttachToButtons: Attaching click events to page change anchors.');
-    
+
         try {
             var leftDiv = document.getElementById('device-and-friend-list');
-    
+
             if (!leftDiv || leftDiv === null) { return 0; }
-    
+
             var btns = leftDiv.getElementsByClassName('nota');
-    
+
             if (!btns || btns === null) { return 0; }
-    
+
             var counter = 0;
-    
+
             for (var t = 0; t < btns.length; t++) {
                 try {
                     if (attachToClick(btns[t], attachedClick)) {
@@ -760,23 +740,23 @@ initializePush = function (push, indx, bNoUncheck) {
                     }
                 } catch (except) {
                     log('Error attaching click event to buttons[' + t + ']');
-    
+
                     console.log(except);
                 }
             }
-    
+
             var logo = document.getElementsByClassName('logo')[0];
-    
+
             attachToClick(logo, attachedClick);
-    
+
             log('AttachToButtons: Finished attaching ' + counter + ' click events to anchors.');
-    
+
             return counter;
         } catch (except) {
             log('AttachToButtons: An error occurred while trying to attach buttons');
-    
+
             console.log(except);
-    
+
             return 0;
         }
     },
