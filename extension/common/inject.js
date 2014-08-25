@@ -57,7 +57,7 @@ getPushes = function (bChecked, bNoInit) {
                 cBoxes = getCBoxesFromPush(element);
 
                 for (var cb = 0; cb < cBoxes.length; cb++) {
-                    if (cBoxes[cb] === null || !cBoxes[cb].classList.contains('checkbox')) {
+                    if (cBoxes[cb] === null || !cBoxes[cb].classList.contains('pbcbox')) {
                         init = true;
                     }
                 }
@@ -257,11 +257,9 @@ propagatePush = function (iCount, aiIndexes, bQueue) {
 },
 
 panelClick = function (event) {
-
     if (event.target.classList.contains('push-check')) { return; }
 
     selectPush(this.parentElement);
-
 },
 closeButtonClick = function () {
     if (bProcessing) { return; }
@@ -291,11 +289,22 @@ checkboxClick = function () {
 initializeCBox = function (cBox) {
     log('initialized: ' + cBox.className);
 
-    if (!cBox.classList.contains('checkbox')) {
+    if (!cBox.classList.contains('pbcbox')) {
+
+        if (cBox.classList.contains('gravatar')) {
+            var prev = cBox.previousSibling;
+
+            prev.style.backgroundImage = cBox.style.backgroundImage;
+
+            deleteElement(cBox);
+
+            return;
+        }
+
+        cBox.classList.add('pbcbox');
+
         cBox.removeEventListener('click', checkboxClick, false);
         cBox.addEventListener('click', checkboxClick, false);
-
-        cBox.classList.add('checkbox');
     }
 },
 initializePush = function (push, indx, bNoUncheck) {
