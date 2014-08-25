@@ -1,7 +1,7 @@
 {
     "name": "Pushbully: Bulk Delete Pushes",
     "short_name": "Pushbully",
-    "version": "2.9",
+    "version": "3.0",
     "manifest_version": 2,
     "description": "Pushbully allows you to easily delete pushes from Pushbullet (en masse!).",
     "icons": {
