@@ -58,12 +58,12 @@ div.note {
     outline: solid 4px transparent !important;
 }
 
-.pushbully.selected > .panel {
+.pushbully#selected > .panel {
     outline: solid 4px #59ab46 !important;
 }
 
 .pushbully.checked > .panel {
-    background-color: #FAE5E3 !important;
+    background-color: #F9DAD7 !important;
 }
 
 .pushbully.checked > .push-share {
@@ -123,7 +123,7 @@ div.note {
         border-style: dotted !important;
     }
 
-.pushbully:not(.checked)  .pbcbox:hover {
+.pushbully:not(.checked) .pbcbox:hover {
     border-color: white !important;
 }
 
@@ -133,7 +133,7 @@ div.note {
 }
 
     .pbcbox:hover::before,
-    .pushbully.checked  .pbcbox::before {
+    .pushbully.checked .pbcbox::before {
         content: none !important;
     }
 
@@ -142,15 +142,15 @@ div.note {
     }
 
     .pbcbox:hover::after,
-    .pushbully.checked  .pbcbox::after {
+    .pushbully.checked .pbcbox::after {
         content: "\f003" !important;
     }
 
-    .pushbully.checked  .pbcbox:hover {
+    .pushbully.checked .pbcbox:hover {
         background-color: #ECF0F1 !important;
     }
 
-    .pushbully.checked  .pbcbox:not(:hover) {
+    .pushbully.checked .pbcbox:not(:hover) {
         background-color: transparent !important;
     }
 

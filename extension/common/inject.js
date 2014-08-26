@@ -78,8 +78,8 @@ getPushes = function (bChecked, bNoInit) {
     return cPushes;
 },
 
-getSelectedPushes = function () {
-    return middleDiv.getElementsByClassName('push selected');
+getSelectedPush = function () {
+    return document.getElementById('selected');
 },
 
 updateOurButtons = function (bReset) {
@@ -259,7 +259,7 @@ propagatePush = function (iCount, aiIndexes, bQueue) {
 panelClick = function (event) {
     if (event.target.classList.contains('push-check')) { return; }
 
-    selectPush(this.parentElement);
+    handlePushSelect(this.parentElement);
 },
 closeButtonClick = function () {
     if (bProcessing) { return; }
@@ -273,7 +273,7 @@ getCBoxesFromPush = function (push) {
     return push.getElementsByClassName('standard-push-icon');
 },
 getClsBtnFromPush = function (push) {
-    push = push || getSelectedPushes()[0];
+    push = push || getSelectedPush()[0];
 
     if (!push || push === null) { return null; }
 
@@ -299,16 +299,15 @@ initializeCBox = function (cBox) {
 
             return;
         }
-
-        cBox.classList.add('pbcbox');
-
-        cBox.removeEventListener('click', checkboxClick, false);
-        cBox.addEventListener('click', checkboxClick, false);
     }
+
+    cBox.classList.add('pbcbox');
+
+    cBox.removeEventListener('click', checkboxClick, false);
+    cBox.addEventListener('click', checkboxClick, false);
 },
 initializePush = function (push, indx, bNoUncheck) {
-    var cBoxes = getCBoxesFromPush(push),
-    closeButton = getClsBtnFromPush(push);
+    var cBoxes = getCBoxesFromPush(push);
 
     if (!cBoxes || cBoxes === null || !cBoxes.length) { return false; }
 
@@ -318,17 +317,17 @@ initializePush = function (push, indx, bNoUncheck) {
 
     push.setAttribute('index', indx);
 
-    if (!push.classList.contains('pushbully')) {
-        push.classList.add('pushbully');
+    push.classList.add('pushbully');
 
-        closeButton.addEventListener('click', closeButtonClick, false);
+    var closeButton = getClsBtnFromPush(push);
+    closeButton.removeEventListener('click', closeButtonClick, false);
+    closeButton.addEventListener('click', closeButtonClick, false);
 
-        var panel = push.getElementsByClassName('panel')[0];
+    var panel = push.getElementsByClassName('panel')[0];
+    panel.removeEventListener('click', panelClick, false);
+    panel.addEventListener('click', panelClick, false);
 
-        panel.addEventListener('click', panelClick, false);
-    }
-
-    if (bNoUncheck === null || !bNoUncheck) {
+    if (!bNoUncheck || bNoUncheck === null) {
         checkPush(push);
     }
 
@@ -367,6 +366,14 @@ getPushFrameDiv = function () {
     return middleDiv.getElementsByClassName('pushframe')[0];
 },
 
+unselectAll = function () {
+    var d = document.getElementById('selected');
+
+    if (d && d !== null) {
+        d.removeAttribute('id');
+    }
+},
+
 refreshCBoxes = function () {
     if (getPushFrameDiv() === null) {
         log('RefreshBoxes: Push frame not found. Stopping box inject...');
@@ -374,7 +381,7 @@ refreshCBoxes = function () {
         return false;
     }
 
-    unselectAllPushes();
+    unselectAll();
 
     log('RefreshBoxes: Push frame found. About to inject boxes...');
 
@@ -560,6 +567,8 @@ btnRefreshBoxesClick = function () {
     log('Refresh boxes button clicked');
 
     refreshCBoxes();
+
+    btnRefreshBoxes.blur();
 },
 btnDeleteAllClick = function () {
     log('Delete all button clicked');
@@ -567,16 +576,22 @@ btnDeleteAllClick = function () {
     deleteCounter = 0;
 
     deleteAll(true, false, false);
+
+    btnDeleteAll.blur();
 },
 btnSelectAllClick = function () {
     log('Select all button clicked');
 
     selectAll();
+
+    btnSelectAll.blur();
 },
 btnDeleteSelectedClick = function () {
     log('Delete Selected button clicked');
 
     deleteSelected();
+
+    btnDeleteSelected.blur();
 },
 
 injectButtons = function () {
@@ -689,82 +704,6 @@ doInjection = function () {
     return true;
 },
 
-/*
-attachedClick = function (e) {
-var pref = this.getAttribute('pref');
-
-this.href = pref;
-
-this.click();
-
-this.removeAttribute('href');
-
-e.preventDefault();
-e.cancelBubble = true;
-
-setDelay(totalReset, 500);
-},
-attachToClick = function (elem) {
-if (!elem || elem === null) { return false; }
-
-var hrf = elem.getAttribute('href');
-
-if (!hrf || hrf === null) { return false; }
-else if (hrf.indexOf('/device?') > -1) { return false; }
-else if (hrf.indexOf('/friend?') > -1) { return false; }
-
-elem.removeAttribute('href');
-
-elem.setAttribute('pref', hrf);
-
-elem.removeEventListener('click', attachedClick, false);
-elem.addEventListener('click', attachedClick, false);
-
-return true;
-},
-attachToButtons = function () {
-log('AttachToButtons: Attaching click events to page change anchors.');
-
-try {
-var leftDiv = document.getElementById('device-and-friend-list');
-
-if (!leftDiv || leftDiv === null) { return 0; }
-
-var btns = leftDiv.getElementsByClassName('nota');
-
-if (!btns || btns === null) { return 0; }
-
-var counter = 0;
-
-for (var t = 0; t < btns.length; t++) {
-try {
-if (attachToClick(btns[t], attachedClick)) {
-counter++;
-}
-} catch (except) {
-log('Error attaching click event to buttons[' + t + ']');
-
-console.log(except);
-}
-}
-
-var logo = document.getElementsByClassName('logo')[0];
-
-attachToClick(logo, attachedClick);
-
-log('AttachToButtons: Finished attaching ' + counter + ' click events to anchors.');
-
-return counter;
-} catch (except) {
-log('AttachToButtons: An error occurred while trying to attach buttons');
-
-console.log(except);
-
-return 0;
-}
-},
-*/
-
 totalReset = function () {
     //attachToButtons();
 
@@ -779,16 +718,6 @@ totalReset = function () {
     log('TotalReset: Complete reset initiated...');
 },
 
-unselectAllPushes = function () {
-    var selected = getSelectedPushes();
-
-    if (selected && selected !== null) {
-        for (var i = 0; i < selected.length; i++) { //In case more than one push are selected for some reason
-            selected[i].classList.remove('selected');
-        }
-    }
-},
-
 scrollViewIfNeeded = function (el) {
     var topOfPage = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop,
         heightOfPage = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight,
@@ -799,7 +728,6 @@ scrollViewIfNeeded = function (el) {
         elH = el.height;
     } else {
         for (var p = el; p && p.tagName !== 'BODY'; p = p.offsetParent) {
-
             elY += p.offsetTop;
         }
 
@@ -813,37 +741,40 @@ scrollViewIfNeeded = function (el) {
     }
 },
 
-selectPush = function (sPush) {
+selectPush = function (push) {
+    if (push && push !== null) {
+        push.setAttribute('id', 'selected');
+    }
+},
+
+handlePushSelect = function (sPush) {
     if (!pushes.length) {
         getPushes();
     }
 
-    var selected = getSelectedPushes(),
-    currentPush = selected[0],
-    newPush = null;
+    var currentPush = document.getElementById('selected'),
+        newPush = null;
 
-    if (sPush !== 'current' && selected && selected !== null) {
-        for (var i = 0; i < selected.length; i++) { //In case more than one push are selected for some reason
-            selected[i].classList.remove('selected');
-        }
-    }
-
-    if (!currentPush && (sPush && sPush.nodeType !== 1)) {
-        newPush = pushes[0];
-    } else {
+    if (!currentPush && sPush && sPush !== null && sPush.nodeType !== 1) {
+        newPush = pushes[(sPush === 'down') ? 0 : (pushes.length - 1)];
+    } else if (sPush && sPush !== null) {
         switch (sPush) {
             case 'up':
-                newPush = currentPush.previousSibling || currentPush;
+                newPush = currentPush.previousSibling;
 
                 break;
 
             case 'down':
-                newPush = currentPush.nextSibling || currentPush;
+                newPush = currentPush.nextSibling;
 
                 break;
 
             case 'current':
-                checkPush(currentPush, null);
+                scrollViewIfNeeded(currentPush);
+
+                setDelay(function () {
+                    checkPush(currentPush, null);
+                }, 20, true);
 
                 return;
 
@@ -854,23 +785,29 @@ selectPush = function (sPush) {
         }
     }
 
-    if (!newPush || newPush === null || newPush === currentPush) {
-        scrollViewIfNeeded(getPushFrameDiv);
+    unselectAll();
+
+    if (!sPush || sPush === null) { return; }
+
+    if (newPush === currentPush) { return; }
+
+    if (!newPush || (newPush === null) || (!newPush.classList.contains('push'))) {
+        log('Not scrolling, newPush === currentPush');
+
+        setDelay(function () {
+            window.scrollTo(0, 0);
+        }, 5, true);
 
         return;
-    }
-
-    newPush.classList.add('selected');
-
-    if (sPush && (sPush === newPush)) {
-        log('Not scrolling');
-
-        return;
-    }
+    }   //var indx = parseInt(newPush.getAttribute('index'));
 
     setDelay(function () {
         scrollViewIfNeeded(newPush);
-    }, 5, true);
+
+        setDelay(function () {
+            selectPush(newPush);
+        }, 5, true);
+    }, 20, true);
 },
 
 checkShouldHandle = function () {
@@ -884,7 +821,7 @@ checkShouldHandle = function () {
 },
 
 handleKeyUp = function (event) {
-    if (!checkShouldHandle() || !getSelectedPushes()) { return; }
+    if (!checkShouldHandle() || !getSelectedPush()) { return; }
 
     if (event.ctrlKey) { return; }
 
@@ -892,18 +829,18 @@ handleKeyUp = function (event) {
         event.preventDefault();
         event.cancelBubble = true;
 
-        selectPush('current');
+        handlePushSelect('current');
     }
 },
 
 lastIndex = 0,
 
 launchSelectedLink = function () {
-    var selected = getSelectedPushes();
+    var selected = getSelectedPush();
 
     if (!selected || selected === null) { return; }
 
-    var anchor = selected[0].getElementsByClassName('text')[0];
+    var anchor = selected.getElementsByClassName('text')[0];
 
     if (!anchor || anchor === null) { return; }
 
@@ -913,6 +850,17 @@ launchSelectedLink = function () {
 
     window.open(anchor.getAttribute('href'));
 },
+
+/*hotkeys = {
+    'btnDeleteAll': 'Alt+Shift+Delete',
+    'btnSelectAll': 'Ctrl+Shift+A',
+    'btnDeleteSelected': 'Ctrl+Delete',
+    'btnRefreshBoxes': 'None',
+    'Selected-Pushes-LaunchLink': 'Ctrl+Enter',
+    'Selected-Pushes-Mark': 'Enter',
+    'Selected-Pushes-Delete': 'Delete',
+    'Selected-Pushes-UnselectAll': 'Escape'
+},*/
 
 handleKeyDown = function (event) {
     if (!checkShouldHandle()) { return; }
@@ -946,45 +894,38 @@ handleKeyDown = function (event) {
     } else {
         switch (event.keyCode) {
             case 27: //Escape
-                unselectAllPushes();
+                unselectAll();
 
                 break;
 
             case 38: //up
-                selectPush('up');
+                handlePushSelect('up');
 
                 break;
 
             case 40: //down
-                selectPush('down');
+                handlePushSelect('down');
 
                 break;
 
             case 46: //delete
-                var cPush = getSelectedPushes()[0],
-                cButton = getClsBtnFromPush(cPush),
-                nextPush;
+                var cPush = getSelectedPush(),
+                    cButton = getClsBtnFromPush(cPush);
 
                 if (!cPush || cPush === null) { return; }
                 if (!cButton || cButton === null) { return; }
 
-                if (nextPush && nextPush !== null) {
-                    nextPush.classList.add('selected');
-                }
-
-                cPush.classList.remove('selected');
+                lastIndex = parseInt(cPush.getAttribute('index'));
 
                 cButton.click();
 
-                lastIndex = parseInt(cPush.getAttribute('index'));
-
                 setDelay(function () {
-                    try {
-                        selectPush(pushes[lastIndex]);
-                    } catch (except) { }
-
                     updateOurButtons();
-                }, 300);
+
+                    setDelay(function () {
+                        handlePushSelect(pushes[lastIndex]);
+                    }, 200, true);
+                }, 300, true);
 
                 break;
         }
@@ -1077,12 +1018,10 @@ initialize = function () {
 
 initialize();
 
-//TODO: Fine-tune hotkey support (generated / more consistency / etc.)
-
 //TODO: Create options page (add ALL the advanced mo'fo'in' options)
 
-//TODO: Handle beginning selected and end selected pushes
+//TODO: Put hotkeys and help in the options page
 
-//TODO: Find better color for panel background
+//TODO: Add Pushbully logo to page (possibly add a link to the options page on the Pushbullet page)
 
-//
+//TODO: Add tooltips to buttons and panels and checkboxes for hotkeys and tips
