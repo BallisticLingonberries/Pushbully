@@ -748,6 +748,12 @@ selectPush = function (push) {
 },
 
 handlePushSelect = function (sPush) {
+    if (!sPush) {
+        unselectAll();
+
+        return;
+    }
+
     if (!pushes.length) {
         getPushes();
     }
@@ -755,43 +761,40 @@ handlePushSelect = function (sPush) {
     var currentPush = document.getElementById('selected'),
         newPush = null;
 
-    if (!currentPush && sPush && sPush !== null && sPush.nodeType !== 1) {
-        newPush = pushes[(sPush === 'down') ? 0 : (pushes.length - 1)];
-    } else if (sPush && sPush !== null) {
-        switch (sPush) {
-            case 'up':
-                newPush = currentPush.previousSibling;
+    if (sPush.nodeType === 1) {
+        newPush = sPush;
+    } else if (sPush === 'current') {
+        scrollViewIfNeeded(currentPush);
 
-                break;
+        setDelay(function () {
+            checkPush(currentPush, null);
+        }, 20, true);
 
-            case 'down':
-                newPush = currentPush.nextSibling;
+        return;
+    } else {
+        var bUp = (sPush === 'up');
 
-                break;
+        if (currentPush) {
+            newPush = (bUp
+                ? newPush = currentPush.previousSibling
+                : newPush = currentPush.nextSibling
+            );
 
-            case 'current':
-                scrollViewIfNeeded(currentPush);
-
-                setDelay(function () {
-                    checkPush(currentPush, null);
-                }, 20, true);
+            if (!(newPush || bUp)) {
+                unselectAll();
 
                 return;
-
-            default:
-                newPush = sPush;
-
-                break;
+            }
+        } else {
+            newPush = pushes[bUp ? pushes.length - 1 : 0];
         }
     }
 
     unselectAll();
 
-    if (!sPush || sPush === null) { return; }
-
     if (newPush === currentPush) { return; }
 
-    if (!newPush || (newPush === null) || (!newPush.classList.contains('push'))) {
+    if (!newPush || (!newPush.classList.contains('push'))) {
         log('Not scrolling, newPush === currentPush');
 
         setDelay(function () {
