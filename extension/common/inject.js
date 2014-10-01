@@ -229,7 +229,7 @@
             buttons.deleteAll.innerText = 'Delete All';
             buttons.deleteAll.className = btnClassName;
             buttons.deleteAll.id = 'delete-all-button';
-            buttons.deleteAll.title = 'Click to delete all of your pushes.';
+            buttons.deleteAll.title = 'Click to delete all of your pushes, starting from the current page on.';
             buttons.deleteAll.onclick = pushes.deleteAll;
 
             //Select all button
@@ -297,7 +297,7 @@
 
         initialize: function() {
             if (!main.reset()) {
-                console.log('Did not reset. Canceling');
+                log('Did not reset. Canceling');
 
                 return false;
             }
