@@ -76,15 +76,14 @@
             }
         },
         highlight: function(push) {
-            var highlit = document.getElementsByClassName('highlit'), isHL;
-
-            if (push) { isHL = push.classList.contains('highlit'); }
+            var highlit = document.getElementsByClassName('highlit'),
+                isHL = push ? push.classList.contains('highlit') : true;
 
             for (var d = 0, len = highlit.length; d < len; d++) {
                 highlit[d].classList.remove('highlit');
             }
 
-            if (push && !isHL) {
+            if (!isHL) {
                 push.classList.add('highlit');
 
                 pushes.scrollIntoView(push);
@@ -138,15 +137,9 @@
                 length = toDelete.length;
 
             if (length > 5) {
-                var stop =
-                    !confirm(
-                        'Are you sure you would like to delete ' +
-                            (all ? 'all %+' : 'these %').replace('%', length) + ' pushes?\n\n' +
-                        'This cannot be canceled nor undone.'
-                    )
-                ;
-
-                if (stop) { return; }
+                if (!confirm('Are you sure you would like to delete ' +
+                                (all ? 'all %+' : 'these %').replace('%', length) + ' pushes?\n\n' +
+                            'This cannot be canceled nor undone.')) { return; }
             }
 
             var i, deleteCounter = 0;
@@ -172,7 +165,7 @@
 
                 log('Deletion complete. Deleted ' + deleteCounter + ' pushes.');
 
-                window.setTimeout(function() { pushes.refresh(false, true); }, 500);
+                window.setTimeout(function() { pushes.refresh(); }, 500);
             };
 
             doDelete();
@@ -285,21 +278,29 @@
     };
 
     main = {
+        pushListDiv: null,
         doReset: function() {
             main.pushListDiv = document.getElementsByClassName('physics')[0];
 
-            if (buttons.inject()) { pushes.refresh(); }
+            if (buttons.inject()) {
+                pushes.refresh();
+                return true;
+            }
         },
         reset: function(iDelay) {
             if (iDelay) {
                 window.setTimeout(main.doReset, iDelay);
             } else {
-                main.doReset();
+                return main.doReset();
             }
         },
 
         initialize: function() {
-            main.reset();
+            if (!main.reset()) {
+                console.log('Did not reset. Canceling');
+
+                return false;
+            }
 
             try {
                 var MyObserver = window.MutationObserver || window.WebKitMutationObserver || new MutationObserver();
@@ -316,6 +317,8 @@
                                     log('Mutation: New push found (count = ' + (count++) + '). Propogating...');
                                 }
                             }
+
+                            pushes.refresh();
                         }
                     });
                 });
