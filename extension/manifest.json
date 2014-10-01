@@ -1,7 +1,7 @@
 {
     "name": "Pushbully: Bulk Delete Pushes",
     "short_name": "Pushbully",
-    "version": "3.0",
+    "version": "4.0",
     "manifest_version": 2,
     "description": "Pushbully allows you to easily delete pushes from Pushbullet (en masse!).",
     "icons": {
@@ -11,14 +11,13 @@
     },
     "author": "Karl Tatom",
     "homepage_url": "https://chrome.google.com/webstore/detail/kamddpgihdoijjoekiambdmbngpgiaoi",
-    "permissions": [ "*://*.pushbullet.com/*" ],
     "content_scripts": [
         {
             "matches": [ "*://*.pushbullet.com/*" ],
             "css": [ "common/inject.css" ],
-            "js": [ "content-script.js" ],
+            "js": [ "common/inject.js" ],
             "all_frames": true
         }
     ],
-    "web_accessible_resources": [ "common/inject.js" ]
+    "web_accessible_resources": [ "common/images/checkmark.png" ]
 }
