@@ -14,13 +14,27 @@
         list: [], checkedList: [],
         checkmark: chrome.runtime.getURL('common/images/checkmark.png'),
 
-        checkThis: function(e) { console.log(e); pushes.check(this); },
-        clickPush: function(e) { console.log(e); pushes.highlight(this); },
+        clickPush: function(e) {
+            if (e.toElement.classList.contains('profile-pic')) {
+                console.log('profile pic clicked');
+                pushes.check(this, !this.classList.contains('checked'));
+            }
+            else if (e.toElement.classList.contains('push-close')) {
+                console.log('close button clicked');
+                window.setTimeout(function() {
+                    pushes.refresh();
+                }, 300);
+            } else {
+                console.log('somewhere else clicked');
+                //pushes.highlight(this);
+            }
+        },
 
         initialize: function(push) {
             if (!push.classList.contains('pushbully')) {
                 push.classList.add('pushbully');
                 push.onclick = pushes.clickPush;
+                push.getElementsByClassName('profile-pic')[0].setAttribute('title', 'Click to mark this push for deletion.');
             }
         },
         refresh: function(deselect, partial) {
@@ -62,31 +76,29 @@
             }
         },
         highlight: function(push) {
-            var isHL = push.classList.contains('highlit'),
-                highlit = document.getElementsByClassName('highlit');
+            var highlit = document.getElementsByClassName('highlit'), isHL;
+
+            if (push) { isHL = push.classList.contains('highlit'); }
 
             for (var d = 0, len = highlit.length; d < len; d++) {
                 highlit[d].classList.remove('highlit');
             }
 
-            if (!isHL) {
+            if (push && !isHL) {
                 push.classList.add('highlit');
 
                 pushes.scrollIntoView(push);
             }
-
-            return isHL;
         },
 
         check: function(push, check, bulk) {
-            var isChecked, cBox, title, thumbnail;
+            var cBox, title, thumbnail;
 
-            if (push.classList.contains('pushbully')) { isChecked = push.classList.contains('checked'); }
-            else { pushes.initialize(push); }
+            pushes.initialize(push);
 
             cBox = push.getElementsByClassName('profile-pic')[0];
 
-            check = push.classList.toggle('checked', check === undefined ? !isChecked : check);
+            push.classList.toggle('checked', check);
 
             if (check) {
                 title = 'Click to save this push from certain doom.';
@@ -104,12 +116,10 @@
 
             cBox.setAttribute('title', title);
 
-            if (!bulk) {
-                pushes.refresh();
-                log(push);
-            }
+            if (bulk) { return check; }
 
-            return check;
+            pushes.refresh();
+            log(push);
         },
 
         doSelect: function(check) {
