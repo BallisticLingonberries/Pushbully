@@ -1,5 +1,9 @@
 (function() {
-    var options, main, pushes, buttons, inProg = false, keyList = [];
+    var options, main, pushes, buttons;
+
+    var observer, inProg = false;
+
+    var keyList = [], checkedPushIDs = [];
 
     var log = function(toLog) {
         if (typeof (toLog) === 'string') {
@@ -27,14 +31,15 @@
             }
         }
 
-        log('| sender:' + sender + ' | isProc: ' + isProc + ' || inProg: ' + inProg + ' | keyList:');
-        log(keyList);
+        //log('| sender:' + sender + ' | isProc: ' + isProc + ' || inProg: ' + inProg + ' | keyList:');
+        //log(keyList);
     };
 
     options = {
         enableKBShortcuts: localStorage.getItem('enableKBShortcuts') != 'false',
         onlySelfSent: localStorage.getItem('onlySelfSent') == 'true',
         notFiles: localStorage.getItem('notFiles') == 'true',
+        lockedPushes: localStorage.getItem('lockedPushes') || [],
 
         set: function(option, value) {
             options[option] = value;
@@ -48,40 +53,34 @@
         checkedList: [],
         checkmark: chrome.runtime.getURL('common/images/checkmark.png'),
 
-        clickPush: function(e) {
-            if (e.toElement.classList.contains('profile-pic')) {
-                console.log('profile pic clicked');
-                pushes.check(this, !this.classList.contains('checked'));
-            }
-            else if (e.toElement.classList.contains('push-close')) {
-                console.log('close button clicked');
-                window.setTimeout(function() {
-                    pushes.refresh();
-                }, 300);
-            } else {
-                console.log('somewhere else clicked');
-                //pushes.highlight(this);
-            }
-        },
-
         initialize: function(push) {
+            var cBox = push.getElementsByClassName('profile-pic')[0];
+
             if (!push.classList.contains('pushbully')) {
                 push.classList.add('pushbully');
 
-                push.onclick = pushes.clickPush;
-
-                push.getElementsByClassName('profile-pic')[0].setAttribute('title', 'Click to mark this push for deletion.');
+                if (cBox) {
+                    cBox.setAttribute('title', 'Click to mark this push for deletion.');
+                }
             }
+
+            return cBox;
         },
+
+        getCloseButton: function(push) {
+            return push.getElementsByClassName('push-close')[0];
+        },
+
         refresh: function(deselect, partial) {
             setProcessing('refresh', true);
+
             pushes.list = document.getElementsByClassName('push');
 
             if (!partial) {
                 pushes.checkedList = document.getElementsByClassName('pushbully checked');
 
                 for (var p = pushes.list.length - 1; p >= 0; --p) {
-                    pushes.initialize(pushes.list[p], p);
+                    pushes.initialize(pushes.list[p]);
                 }
             }
 
@@ -90,6 +89,7 @@
             }
 
             buttons.update();
+
             setProcessing('refresh', false);
         },
 
@@ -115,6 +115,7 @@
                 el.scrollIntoView(true);
             }
         },
+
         highlight: function(push) {
             var highlit = document.getElementsByClassName('highlit'),
                 isHL = push ? push.classList.contains('highlit') : true;
@@ -130,35 +131,36 @@
             }
         },
 
-        check: function(push, check, bulk) {
+        check: function(push, check) {
+            if (check == push.classList.contains('checked')) { return; }
+
             var cBox, title, thumbnail;
 
-            pushes.initialize(push);
-
-            cBox = push.getElementsByClassName('profile-pic')[0];
-
-            push.classList.toggle('checked', check);
+            cBox = pushes.initialize(push);
 
             if (check) {
                 title = 'Click to save this push from certain doom.';
                 thumbnail = cBox.getAttribute('src');
-                cBox.setAttribute('data-prevsrc', thumbnail);
+
                 cBox.setAttribute('src', pushes.checkmark);
+                cBox.setAttribute('data-prevsrc', thumbnail);
+
+                checkedPushIDs.push(push);
             } else {
                 title = 'Click to mark this push for destruction.';
                 thumbnail = cBox.getAttribute('data-prevsrc');
+
                 if (thumbnail) {
                     cBox.setAttribute('src', thumbnail);
-                    cBox.removeAttribute('data-prevsrc');
+                    cBox.setAttribute('data-prevsrc', '');
                 }
+
+                var indx = checkedPushIDs.indexOf(push.id);
+                if (indx !== -1) { checkedPushIDs.splice(indx, 1); }
             }
 
+            push.classList.toggle('checked', check);
             cBox.setAttribute('title', title);
-
-            if (bulk) { return check; }
-
-            pushes.refresh();
-            log(push);
         },
 
         doSelect: function(check) {
@@ -168,9 +170,7 @@
 
             pushes.refresh();
         },
-        selectAll: function() {
-            pushes.doSelect(true);
-        },
+
         deselectAll: function() {
             pushes.doSelect(false);
         },
@@ -194,12 +194,14 @@
             var doDelete = function() {
                 pushes.refresh();
 
+                setProcessing('delete', true);
+
                 toDelete = all ? pushes.list : pushes.checkedList;
                 length = toDelete.length;
 
                 if (length > 0) {
                     for (i = length - 1; i >= 0; i--) {
-                        toDelete[i].getElementsByClassName('push-close')[0].click();
+                        pushes.getCloseButton(toDelete[i]).click();
 
                         deleteCounter++;
                     }
@@ -220,6 +222,7 @@
 
             doDelete();
         },
+
         deleteSelected: function() {
             pushes.pDelete(false);
         }
@@ -234,24 +237,10 @@
             log('Injecting buttons...');
 
             if (!main.pushListDiv) {
-                log('buttons.inject: main.pushListDiv not found. Stopping inject...');
+                log('buttons.inject: main.pushListDiv (push_cards) not found. Stopping inject...');
 
                 return false;
-            }
-
-            var pushFrame = document.getElementsByClassName('pushframe')[0],
-                buttonsDiv = document.getElementById('pushbully-button-box');
-
-            if (!pushFrame) {
-                log('buttons.inject: pushFrame not found. Stopping inject...');
-
-                return false;
-            }
-
-            if (buttonsDiv) {
-                // buttonsDiv.parentElement.removeChild(buttonsDiv);
-                // log('buttons.inject: Buttons div deleted.');
-
+            } else if (document.getElementById('pushbully-button-box')) {
                 log('buttons.inject: Buttons div already exists.');
 
                 return true;
@@ -260,51 +249,48 @@
             log('buttons.inject: Injecting buttons...');
 
             //Button divider
-            buttonsDiv = document.createElement('div');
+            var buttonsDiv = document.createElement('div');
             buttonsDiv.id = 'pushbully-button-box';
-            pushFrame.insertAdjacentElement('afterEnd', buttonsDiv);
 
             log('buttonsDiv:');
             log(buttonsDiv);
 
             //BUTTONS
-            var btnClassName = 'btn pushbully-button';
-
-            //Refresh boxes button
-            var btnRefreshBoxes = document.createElement('button');
-            btnRefreshBoxes.innerText = 'Refresh Boxes';
-            btnRefreshBoxes.className = btnClassName;
-            btnRefreshBoxes.id = 'refresh-boxes-button';
-            btnRefreshBoxes.title = 'Sometimes pushes won\'t have checkboxes on them. Click this to fix that.';
-            btnRefreshBoxes.onclick = pushes.refresh; //Sends event as first parameter; means the first paramater is true 
-
-            //Delete all pushes.list button
-            buttons.deleteAll = document.createElement('button');
-            buttons.deleteAll.innerText = 'Delete All';
-            buttons.deleteAll.className = btnClassName;
-            buttons.deleteAll.id = 'delete-all-button';
-            buttons.deleteAll.title = 'Click to delete all of your pushes, starting from the current page on.';
-            buttons.deleteAll.onclick = pushes.pDelete; //Sends event as first parameter; means the first paramater is true 
+            var btnTemplate = document.createElement('button'),
+                btnRefreshBoxes;
+            btnTemplate.className = 'btn pushbully-button';
 
             //Select all button
-            buttons.selectAll = document.createElement('button');
+            buttons.selectAll = btnTemplate.cloneNode();
             buttons.selectAll.innerText = 'Select All';
-            buttons.selectAll.className = btnClassName;
             buttons.selectAll.id = 'select-all-button';
+            buttonsDiv.appendChild(buttons.selectAll);
 
             //Delete selected button
-            buttons.deleteSelected = document.createElement('button');
+            buttons.deleteSelected = btnTemplate.cloneNode();
             buttons.deleteSelected.innerText = 'Delete Selected';
-            buttons.deleteSelected.className = btnClassName;
             buttons.deleteSelected.id = 'delete-selected-button';
             buttons.deleteSelected.title = 'Click to delete all selected pushes.';
             buttons.deleteSelected.onclick = pushes.deleteSelected;
-
-            buttonsDiv.appendChild(buttons.selectAll);
             buttonsDiv.appendChild(buttons.deleteSelected);
 
+            //Refresh boxes button
+            btnRefreshBoxes = btnTemplate.cloneNode();
+            btnRefreshBoxes.innerText = 'Refresh Boxes';
+            btnRefreshBoxes.id = 'refresh-boxes-button';
+            btnRefreshBoxes.title = 'Sometimes pushes won\'t have checkboxes on them. Click this to fix that.';
+            btnRefreshBoxes.onclick = pushes.refresh; //Sends event as first parameter; means the first paramater is true 
             buttonsDiv.appendChild(btnRefreshBoxes);
+
+            //Delete all pushes button
+            buttons.deleteAll = btnTemplate.cloneNode();
+            buttons.deleteAll.innerText = 'Delete All';
+            buttons.deleteAll.id = 'delete-all-button';
+            buttons.deleteAll.title = 'Click to delete all of your pushes, starting from the current page on.';
+            buttons.deleteAll.onclick = pushes.pDelete; //Sends event as first parameter; means the first paramater is true
             buttonsDiv.appendChild(buttons.deleteAll);
+
+            main.pushListDiv.insertAdjacentElement('beforeBegin', buttonsDiv);
 
             log('Button box and buttons injected.');
 
@@ -315,15 +301,17 @@
             if (pushes.list.length && pushes.checkedList.length) {
                 buttons.deleteSelected.innerText = 'Delete Selected (' + pushes.checkedList.length + ')';
 
-                buttons.selectAll.onclick = pushes.deselectAll;
                 buttons.selectAll.innerText = 'Deselect All';
                 buttons.selectAll.title = 'Click to deselect all selected pushes.';
+
+                buttons.selectAll.onclick = pushes.deselectAll;
             } else {
                 buttons.deleteSelected.innerText = 'Delete Selected';
 
-                buttons.selectAll.onclick = pushes.selectAll;
                 buttons.selectAll.innerText = 'Select All' + (pushes.list.length ? ' (' + pushes.list.length + ')' : '');
-                buttons.selectAll.title = 'Click to select all pushes on the first page.';
+                buttons.selectAll.title = 'Click to select all pushes on the current page.';
+
+                buttons.selectAll.onclick = pushes.doSelect;
             }
 
             buttons.selectAll.disabled = buttons.deleteAll.disabled = !pushes.list.length;
@@ -333,15 +321,124 @@
 
     main = {
         pushListDiv: null,
-        doReset: function() {
-            main.pushListDiv = document.getElementsByClassName('physics')[0];
 
-            if (buttons.inject()) {
+        pushListClick: function(e) {
+            var
+                elem,
+                push = (elem = e.toElement),
+                i = 0
+            ;
+
+            while (i <= 3) {
+                if ((push = push.parentElement).classList.contains('push')) {
+                    i = null;
+                    break;
+                }
+
+                i++;
+            }
+
+            if (i !== null) { return; }
+
+            if (elem.classList.contains('profile-pic')) {
+                console.log('profile pic clicked');
+
+                pushes.check(push, !push.classList.contains('checked'));
+
                 pushes.refresh();
+            }
+            else if (elem.classList.contains('push-close')) {
+                console.log('close button clicked');
 
-                return true;
+                /*
+                window.setTimeout(function() {
+                    pushes.refresh();
+                }, 300);
+                */
+            } else {
+                console.log('somewhere else clicked');
+
+                /*pushes.highlight(this);*/
             }
         },
+
+        doReset: function() {
+            setProcessing('doreset', true);
+
+            try {
+                main.pushListDiv = document.getElementsByClassName('push_cards')[0];
+
+                if (!main.pushListDiv) {
+                    return false;
+                }
+
+                main.pushListDiv.onclick = main.pushListClick;
+
+                if (!buttons.inject()) {
+                    return false;
+                }
+
+                pushes.refresh();
+
+                try {
+                    var MyObserver = window.MutationObserver || window.WebKitMutationObserver || new MutationObserver(),
+
+                        count, offset, node,
+
+                        handleMutation = function(nodes, chng) {
+                            log('HandleMutation fired | nodes:'); log(nodes);
+
+                            for (var i = nodes.length - 1; i >= 0; i--) {
+                                node = nodes[i];
+                                if (node.className && node.className === 'push') {
+                                    log('Push mutation: Count = ' + (++count) + ' | Offset = ' + (offset += chng));
+                                    log(node);
+                                }
+                            }
+                        }
+                    ;
+
+                    observer = new MyObserver(function(mutations) {
+                        log('mutation observer fired');
+
+                        count = 0; offset = 0; node = null;
+                        mutations.forEach(function(mutation) {
+                            log('Mutation foreach entry');
+
+                            if (mutation.addedNodes) {
+                                handleMutation(mutation.addedNodes, +1);
+                            }
+
+                            if (mutation.removedNodes) {
+                                handleMutation(mutation.removedNodes, -1);
+                            }
+                        });
+
+                        log('final offset: ' + offset + ' | final count: ' + count);
+
+                        pushes.refresh();
+                    });
+
+                    observer.observe(
+                        main.pushListDiv,
+                        {
+                            childList: true,
+                            subtree: true
+                        }
+                    );
+
+                    log('Initialize: Attached mutation observer to listen for new pushes.');
+                } catch (except) {
+                    log('Initialize: Could not attach mutation observer due to error:');
+
+                    log(except);
+                }
+
+                return true;
+            } catch (ex) { return false; }
+            finally { setProcessing('doreset', false); }
+        },
+
         reset: function(iDelay) {
             if (iDelay) {
                 window.setTimeout(main.doReset, iDelay);
@@ -355,56 +452,6 @@
                 log('Did not reset. Canceling');
 
                 return false;
-            }
-
-            try {
-                var
-                    MyObserver = window.MutationObserver || window.WebKitMutationObserver || new MutationObserver(),
-
-                    count, offset, node,
-
-                    handleMutation = function(nodes, chng) {
-                        for (var i = nodes.length - 1; i >= 0; i--) {
-                            node = nodes[i];
-
-                            if (node.classList && node.classList.contains('push')) {
-                                log('Push mutation: Count = ' + (++count) + ' | Offset = ' + offset);
-                            }
-
-                            offset += chng;
-                        }
-                    },
-
-                    observer = new MyObserver(function(mutations) {
-                        count = 0; offset = 0; node = null;
-                        mutations.forEach(function(mutation) {
-                            if (mutation.addedNodes) {
-                                handleMutation(mutation.addedNodes, +1);
-                            }
-
-                            if (mutation.removedNodes) {
-                                handleMutation(mutation.removedNodes, -1);
-                            }
-                        });
-                        if (count) {
-                            pushes.refresh();
-                        }
-                    })
-                ;
-
-                observer.observe(
-                    main.pushListDiv,
-                    {
-                        childList: true,
-                        subtree: true
-                    }
-                );
-
-                log('Initialize: Attached mutation observer to listen for new pushes.');
-            } catch (except) {
-                log(except);
-
-                log('Initialize: Could not attach mutation observer due to error:');
             }
 
             var wHist = window.history,
