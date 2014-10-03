@@ -1,17 +1,51 @@
 (function() {
-    var main, pushes, buttons;
+    var options, main, pushes, buttons, inProg = false, keyList = [];
 
     var log = function(toLog) {
         if (typeof (toLog) === 'string') {
             console.log('PBULLY: ' + toLog);
-        }
-        else {
+        } else {
             console.log(toLog);
         }
     };
 
+    var setProcessing = function(sender, isProc) {
+        var sIndex = keyList.indexOf(sender);
+        if (isProc) {
+            if (sIndex === -1) {
+                keyList.push(sender);
+            }
+
+            inProg = true;
+        } else {
+            if (sIndex !== -1) {
+                keyList.splice(sIndex, 1);
+            }
+
+            if (keyList.length === 0) {
+                inProg = false;
+            }
+        }
+
+        log('| sender:' + sender + ' | isProc: ' + isProc + ' || inProg: ' + inProg + ' | keyList:');
+        log(keyList);
+    };
+
+    options = {
+        enableKBShortcuts: localStorage.getItem('enableKBShortcuts') != 'false',
+        onlySelfSent: localStorage.getItem('onlySelfSent') == 'true',
+        notFiles: localStorage.getItem('notFiles') == 'true',
+
+        set: function(option, value) {
+            options[option] = value;
+
+            localStorage.setItem(option, value.toString());
+        }
+    };
+
     pushes = {
-        list: [], checkedList: [],
+        list: [],
+        checkedList: [],
         checkmark: chrome.runtime.getURL('common/images/checkmark.png'),
 
         clickPush: function(e) {
@@ -33,11 +67,14 @@
         initialize: function(push) {
             if (!push.classList.contains('pushbully')) {
                 push.classList.add('pushbully');
+
                 push.onclick = pushes.clickPush;
+
                 push.getElementsByClassName('profile-pic')[0].setAttribute('title', 'Click to mark this push for deletion.');
             }
         },
         refresh: function(deselect, partial) {
+            setProcessing('refresh', true);
             pushes.list = document.getElementsByClassName('push');
 
             if (!partial) {
@@ -48,9 +85,12 @@
                 }
             }
 
-            if (deselect) { pushes.deselectAll(); }
+            if (deselect) {
+                pushes.deselectAll();
+            }
 
             buttons.update();
+            setProcessing('refresh', false);
         },
 
         scrollIntoView: function(el) {
@@ -125,12 +165,19 @@
             for (var i = pushes.list.length - 1; i >= 0; i--) {
                 pushes.check(pushes.list[i], check, true);
             }
+
             pushes.refresh();
         },
-        selectAll: function() { pushes.doSelect(true); },
-        deselectAll: function() { pushes.doSelect(false); },
+        selectAll: function() {
+            pushes.doSelect(true);
+        },
+        deselectAll: function() {
+            pushes.doSelect(false);
+        },
 
         pDelete: function(all) { //selection = 'checked' || selection = 'all'
+            setProcessing('delete', true);
+
             pushes.refresh();
 
             var toDelete = all ? pushes.list : pushes.checkedList,
@@ -153,6 +200,7 @@
                 if (length > 0) {
                     for (i = length - 1; i >= 0; i--) {
                         toDelete[i].getElementsByClassName('push-close')[0].click();
+
                         deleteCounter++;
                     }
 
@@ -166,16 +214,21 @@
                 log('Deletion complete. Deleted ' + deleteCounter + ' pushes.');
 
                 window.setTimeout(function() { pushes.refresh(); }, 500);
+
+                setProcessing('delete', false);
             };
 
             doDelete();
         },
-        deleteAll: function() { pushes.pDelete(true); },
-        deleteSelected: function() { pushes.pDelete(false); }
+        deleteSelected: function() {
+            pushes.pDelete(false);
+        }
     };
 
     buttons = {
-        selectAll: null, deleteSelected: null, deleteAll: null,
+        selectAll: null,
+        deleteSelected: null,
+        deleteAll: null,
 
         inject: function() {
             log('Injecting buttons...');
@@ -196,11 +249,12 @@
             }
 
             if (buttonsDiv) {
-                buttonsDiv.parentElement.removeChild(buttonsDiv);
+                // buttonsDiv.parentElement.removeChild(buttonsDiv);
+                // log('buttons.inject: Buttons div deleted.');
 
-                log('buttons.inject: Buttons div deleted.');
-            } else {
-                log('buttons.inject: Buttons div doesn\'t exist.');
+                log('buttons.inject: Buttons div already exists.');
+
+                return true;
             }
 
             log('buttons.inject: Injecting buttons...');
@@ -222,7 +276,7 @@
             btnRefreshBoxes.className = btnClassName;
             btnRefreshBoxes.id = 'refresh-boxes-button';
             btnRefreshBoxes.title = 'Sometimes pushes won\'t have checkboxes on them. Click this to fix that.';
-            btnRefreshBoxes.onclick = function() { pushes.refresh(true); };
+            btnRefreshBoxes.onclick = pushes.refresh; //Sends event as first parameter; means the first paramater is true 
 
             //Delete all pushes.list button
             buttons.deleteAll = document.createElement('button');
@@ -230,7 +284,7 @@
             buttons.deleteAll.className = btnClassName;
             buttons.deleteAll.id = 'delete-all-button';
             buttons.deleteAll.title = 'Click to delete all of your pushes, starting from the current page on.';
-            buttons.deleteAll.onclick = pushes.deleteAll;
+            buttons.deleteAll.onclick = pushes.pDelete; //Sends event as first parameter; means the first paramater is true 
 
             //Select all button
             buttons.selectAll = document.createElement('button');
@@ -284,6 +338,7 @@
 
             if (buttons.inject()) {
                 pushes.refresh();
+
                 return true;
             }
         },
@@ -303,34 +358,52 @@
             }
 
             try {
-                var MyObserver = window.MutationObserver || window.WebKitMutationObserver || new MutationObserver();
+                var
+                    MyObserver = window.MutationObserver || window.WebKitMutationObserver || new MutationObserver(),
 
-                var observer = new MyObserver(function(mutations) {
-                    mutations.forEach(function(mutation) {
-                        if (mutation.addedNodes) {
-                            var count = 0, node;
+                    count, offset, node,
 
-                            for (var i = 0, l = mutation.addedNodes.length; i < l; i++) {
-                                node = mutation.addedNodes[i];
+                    handleMutation = function(nodes, chng) {
+                        for (var i = nodes.length - 1; i >= 0; i--) {
+                            node = nodes[i];
 
-                                if (node.className === 'push') {
-                                    log('Mutation: New push found (count = ' + (count++) + '). Propogating...');
-                                }
+                            if (node.classList && node.classList.contains('push')) {
+                                log('Push mutation: Count = ' + (++count) + ' | Offset = ' + offset);
                             }
 
+                            offset += chng;
+                        }
+                    },
+
+                    observer = new MyObserver(function(mutations) {
+                        count = 0; offset = 0; node = null;
+                        mutations.forEach(function(mutation) {
+                            if (mutation.addedNodes) {
+                                handleMutation(mutation.addedNodes, +1);
+                            }
+
+                            if (mutation.removedNodes) {
+                                handleMutation(mutation.removedNodes, -1);
+                            }
+                        });
+                        if (count) {
                             pushes.refresh();
                         }
-                    });
-                });
+                    })
+                ;
 
-                observer.observe(main.pushListDiv, {
-                    childList: true,
-                    subtree: true
-                });
+                observer.observe(
+                    main.pushListDiv,
+                    {
+                        childList: true,
+                        subtree: true
+                    }
+                );
 
                 log('Initialize: Attached mutation observer to listen for new pushes.');
             } catch (except) {
                 log(except);
+
                 log('Initialize: Could not attach mutation observer due to error:');
             }
 
@@ -351,7 +424,9 @@
 
             window.onhashchange =
                 window.onpopstate =
-                    window.onpushstate = function() { main.reset(500); };
+                    window.onpushstate = function() {
+                        main.reset(500);
+                    };
 
             log('Initialize: Attached pop state listener to listen for page change.');
 
