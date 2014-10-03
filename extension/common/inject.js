@@ -54,13 +54,23 @@
         checkmark: chrome.runtime.getURL('common/images/checkmark.png'),
 
         initialize: function(push) {
-            var cBox = push.getElementsByClassName('profile-pic')[0];
+            var cBox = push.getElementsByClassName('profile-pic')[0], disabled;
+
+            if (options.lockedPushes) {
+                var indx = options.lockedPushes.indexOf(push.id);
+
+                disabled = push.classList.toggle('locked', indx != -1);
+            }
 
             if (!push.classList.contains('pushbully')) {
                 push.classList.add('pushbully');
 
                 if (cBox) {
-                    cBox.setAttribute('title', 'Click to mark this push for deletion.');
+                    if (disabled) {
+                        cBox.setAttribute('title', 'This push is locked.');
+                    } else {
+                        cBox.setAttribute('title', 'Click to mark this push for deletion.');
+                    }
                 }
             }
 
