@@ -11,3 +11,6 @@ Pushbully.csproj.user
 web.Debug.config
 web.Release.config
 web.config
+app/inject.min.css
+app/inject.min.js
+app/inject.min.js.map
