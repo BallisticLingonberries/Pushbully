@@ -2,3 +2,12 @@ extension/common/debug.log
 extension/common/inject.min.js
 extension/common/inject.min.js.map
 extension/common/inject.min.css
+DebugSettings.template.xml
+Properties/build/lib/Ionic.Zip.DLL
+Properties/build/lib/MSBuild.ExtensionPack.dll
+Properties/build/ligershark.chrome.targets
+Pushbully.csproj
+Pushbully.csproj.user
+web.Debug.config
+web.Release.config
+web.config

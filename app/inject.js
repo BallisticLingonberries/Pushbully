@@ -1,9 +1,11 @@
 (function() {
     var options, main, pushes, buttons;
 
-    var observer, inProg = false;
+    var inProg = false;
 
-    var keyList = [], checkedPushIDs = [];
+    var keyList = [];
+
+    var checkedPushIDs = [];
 
     var log = function(toLog) {
         if (typeof (toLog) === 'string') {
@@ -45,16 +47,27 @@
             options[option] = value;
 
             localStorage.setItem(option, value.toString());
+
+            return value;
+        },
+        get: function(option, value) {
+            value = localStorage.getItem(option);
+
+            options[option] = value;
+
+            return value;
         }
     };
 
     pushes = {
         list: [],
         checkedList: [],
-        checkmark: chrome.runtime.getURL('common/images/checkmark.png'),
+        checkmark: chrome.runtime.getURL('img/checkmark.png'),
 
         initialize: function(push) {
             var cBox = push.getElementsByClassName('profile-pic')[0], disabled;
+
+            push.getElementsByClassName
 
             if (options.lockedPushes) {
                 var indx = options.lockedPushes.indexOf(push.id);
@@ -81,26 +94,51 @@
             return push.getElementsByClassName('push-close')[0];
         },
 
-        refresh: function(deselect, partial) {
+        refresh: function(deselect, partial, isMutation) {
+            isMutation = (isMutation && checkedPushIDs.length);
+
             setProcessing('refresh', true);
 
-            pushes.list = document.getElementsByClassName('push');
+            try {
+                pushes.list = document.getElementsByClassName('push');
 
-            if (!partial) {
-                pushes.checkedList = document.getElementsByClassName('pushbully checked');
+                if (!partial) {
+                    pushes.checkedList = document.getElementsByClassName('pushbully checked');
 
-                for (var p = pushes.list.length - 1; p >= 0; --p) {
-                    pushes.initialize(pushes.list[p]);
+                    var push, shouldCheck;
+
+                    for (var p = 0, le = pushes.list.length; p < le; p++) {
+                        push = pushes.list[p];
+                        pushes.initialize(push);
+
+                        if (isMutation) {
+                            shouldCheck = (checkedPushIDs.indexOf(push.id) !== -1);
+
+                            if (shouldCheck !== push.classList.contains('checked')) {
+                                pushes.check(push, shouldCheck);
+                            }
+                        }
+                    }
+
+                    if (isMutation) {
+                        for (var l = checkedPushIDs.length - 1; l >= 0; --p) {
+                            if (!document.getElementById(checkedPushIDs[l])) {
+                                checkedPushIDs.splice(l, 1);
+                            }
+                        }
+                    }
                 }
+
+                if (deselect) {
+                    pushes.deselectAll();
+                }
+
+                buttons.update();
+            } catch (exce) {
+                console.log(exce);
+            } finally {
+                setProcessing('refresh', false);
             }
-
-            if (deselect) {
-                pushes.deselectAll();
-            }
-
-            buttons.update();
-
-            setProcessing('refresh', false);
         },
 
         scrollIntoView: function(el) {
@@ -148,6 +186,8 @@
 
             cBox = pushes.initialize(push);
 
+            var indx = checkedPushIDs.indexOf(push.id);
+
             if (check) {
                 title = 'Click to save this push from certain doom.';
                 thumbnail = cBox.getAttribute('src');
@@ -155,7 +195,9 @@
                 cBox.setAttribute('src', pushes.checkmark);
                 cBox.setAttribute('data-prevsrc', thumbnail);
 
-                checkedPushIDs.push(push);
+                if (indx !== -1) {
+                    checkedPushIDs.push(push);
+                }
             } else {
                 title = 'Click to mark this push for destruction.';
                 thumbnail = cBox.getAttribute('data-prevsrc');
@@ -165,8 +207,9 @@
                     cBox.setAttribute('data-prevsrc', '');
                 }
 
-                var indx = checkedPushIDs.indexOf(push.id);
-                if (indx !== -1) { checkedPushIDs.splice(indx, 1); }
+                if (indx !== -1) {
+                    checkedPushIDs.splice(indx, 1);
+                }
             }
 
             push.classList.toggle('checked', check);
@@ -185,10 +228,10 @@
             pushes.doSelect(false);
         },
 
-        pDelete: function(all) { //selection = 'checked' || selection = 'all'
-            setProcessing('delete', true);
-
+        pDelete: function(all) {
             pushes.refresh();
+
+            setProcessing('delete', true);
 
             var toDelete = all ? pushes.list : pushes.checkedList,
                 length = toDelete.length;
@@ -196,7 +239,7 @@
             if (length > 5) {
                 if (!confirm('Are you sure you would like to delete ' +
                                 (all ? 'all %+' : 'these %').replace('%', length) + ' pushes?\n\n' +
-                            'This cannot be canceled nor undone.')) { return; }
+                             'This cannot be canceled nor undone.')) { return; }
             }
 
             var i, deleteCounter = 0;
@@ -206,28 +249,34 @@
 
                 setProcessing('delete', true);
 
-                toDelete = all ? pushes.list : pushes.checkedList;
-                length = toDelete.length;
+                try {
+                    toDelete = all ? pushes.list : pushes.checkedList;
+                    length = toDelete.length;
 
-                if (length > 0) {
-                    for (i = length - 1; i >= 0; i--) {
-                        pushes.getCloseButton(toDelete[i]).click();
+                    if (length > 0) {
+                        for (i = length - 1; i >= 0; i--) {
+                            pushes.getCloseButton(toDelete[i]).click();
 
-                        deleteCounter++;
+                            deleteCounter++;
+                        }
+
+                        if (all) {
+                            window.setTimeout(doDelete, 500);
+
+                            return;
+                        }
                     }
 
-                    if (all) {
-                        window.setTimeout(doDelete, 500);
+                    log('Deletion complete. Deleted ' + deleteCounter + ' pushes.');
 
-                        return;
-                    }
+                    window.setTimeout(function() {
+                        pushes.refresh();
+                    }, 500);
+                } catch (exc) {
+
+                } finally {
+                    setProcessing('delete', false);
                 }
-
-                log('Deletion complete. Deleted ' + deleteCounter + ' pushes.');
-
-                window.setTimeout(function() { pushes.refresh(); }, 500);
-
-                setProcessing('delete', false);
             };
 
             doDelete();
@@ -332,6 +381,9 @@
     main = {
         pushListDiv: null,
 
+        MyObserver: null,
+        observer: null,
+
         pushListClick: function(e) {
             var
                 elem,
@@ -356,19 +408,10 @@
                 pushes.check(push, !push.classList.contains('checked'));
 
                 pushes.refresh();
-            }
-            else if (elem.classList.contains('push-close')) {
+            } else if (elem.classList.contains('push-close')) {
                 console.log('close button clicked');
-
-                /*
-                window.setTimeout(function() {
-                    pushes.refresh();
-                }, 300);
-                */
             } else {
                 console.log('somewhere else clicked');
-
-                /*pushes.highlight(this);*/
             }
         },
 
@@ -391,45 +434,34 @@
                 pushes.refresh();
 
                 try {
-                    var MyObserver = window.MutationObserver || window.WebKitMutationObserver || new MutationObserver(),
+                    if (main.observer) {
+                        main.observer.stop();
+                    }
 
-                        count, offset, node,
+                    main.MyObserver = window.MutationObserver
+                        || window.WebKitMutationObserver
+                        || new MutationObserver();
 
-                        handleMutation = function(nodes, chng) {
-                            log('HandleMutation fired | nodes:'); log(nodes);
+                    var timeout;
 
-                            for (var i = nodes.length - 1; i >= 0; i--) {
-                                node = nodes[i];
-                                if (node.className && node.className === 'push') {
-                                    log('Push mutation: Count = ' + (++count) + ' | Offset = ' + (offset += chng));
-                                    log(node);
-                                }
-                            }
+                    main.observer = new main.MyObserver(function() {
+                        if (inProg) {
+
+                            alert('mutation observer fired, but inProg = true');
+                            return;
                         }
-                    ;
+                        if (timeout) {
+                            window.clearTimeout(timeout);
+                        }
 
-                    observer = new MyObserver(function(mutations) {
-                        log('mutation observer fired');
+                        alert('mutation observer fired - about to refresh in 200ms');
 
-                        count = 0; offset = 0; node = null;
-                        mutations.forEach(function(mutation) {
-                            log('Mutation foreach entry');
-
-                            if (mutation.addedNodes) {
-                                handleMutation(mutation.addedNodes, +1);
-                            }
-
-                            if (mutation.removedNodes) {
-                                handleMutation(mutation.removedNodes, -1);
-                            }
-                        });
-
-                        log('final offset: ' + offset + ' | final count: ' + count);
-
-                        pushes.refresh();
+                        timeout = window.setTimeout(function() {
+                            pushes.refresh(false, false, true);
+                        }, 400);
                     });
 
-                    observer.observe(
+                    main.observer.observe(
                         main.pushListDiv,
                         {
                             childList: true,
@@ -445,8 +477,11 @@
                 }
 
                 return true;
-            } catch (ex) { return false; }
-            finally { setProcessing('doreset', false); }
+            } catch (ex) {
+                return false;
+            } finally {
+                setProcessing('doreset', false);
+            }
         },
 
         reset: function(iDelay) {
@@ -503,3 +538,5 @@
 //TODO: Add Pushbully logo to page (possibly add a link to the options page on the Pushbullet page)
 
 //TODO: Add tooltips to buttons and panels and pushes for hotkeys and tips
+
+//TODO: Handle propogation
