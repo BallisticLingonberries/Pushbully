@@ -125,6 +125,8 @@ pushes = {
 
                 var push, shouldCheck;
 
+                log('refreshing');
+
                 for (var p = 0, le = pushes.list.length; p < le; p++) {
                     push = pushes.list[p];
                     pushes.initialize(push);
@@ -218,7 +220,7 @@ pushes = {
         push.classList.toggle('checked', check);
 
         var
-            title, thumbnail,
+            thumbnail,
             cBox = pushes.getCheckbox(push),
             indx = pushes.checkedIDs.indexOf(push.id)
         ;
@@ -266,7 +268,8 @@ pushes = {
     currentLocked: [],
 
     getcurrentLocked: function() {
-        return (pushes.currentLocked = document.getElementsByClassName('push locked'));
+        pushes.currentLocked = document.getElementsByClassName('push locked');
+        return;
     },
 
     pDelete: function(all) {
@@ -318,10 +321,6 @@ pushes = {
             log('Deletion complete. Deleted ' + deleteCounter + ' pushes.');
 
             setProcessing('dodelete', false);
-
-            window.setTimeout(function() {
-                pushes.refresh();
-            }, 500);
         };
 
         doDelete(true);
@@ -512,7 +511,7 @@ main = {
 
                     timeout = window.setTimeout(function() {
                         pushes.refresh(false, false, true);
-                    }, 600);
+                    }, 700);
                 });
 
                 main.observer.observe(
