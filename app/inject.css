@@ -119,7 +119,6 @@
             color: gold !important;
         }
 
-            .push .push-lock:hover::before,
             .push.locked .push-lock::before {
                 content: "\f023" !important;
             }

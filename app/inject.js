@@ -1,49 +1,39 @@
 'use strict';
 
-var isProcessing = false, keyList = [];
+var isProcessing, keyList = [];
 
 var log = function(toLog) {
-    if (typeof (toLog) === 'string') {
-        console.log('PBULLY: ' + toLog);
-    } else {
-        console.log(toLog);
-    }
+    console.log('PBULLY: ', toLog, '\nkeyList: ', keyList);
 };
 
 var setProcessing = function(sender, isProc) {
     var sIndex = keyList.indexOf(sender);
 
-    if (isProc) {
-        isProcessing = true;
-
-        if (sIndex === -1) {
-            keyList.push(sender);
-        }
-    } else {
-        if (sIndex !== -1) {
-            keyList.splice(sIndex, 1);
-        }
-
-        if (keyList.length === 0) {
-            isProcessing = false;
-        }
+    if (isProc && sIndex === -1) {
+        keyList.push(sender);
+    } else if (!isProc && sIndex !== -1) {
+        keyList.splice(sIndex, 1);
     }
+
+    isProcessing = !!keyList.length;
 };
 
 var options, main, pushes, buttons;
 
 options = {
-    enableKBShortcuts: localStorage.getItem('enableKBShortcuts') != 'false',
-    onlySelfSent: localStorage.getItem('onlySelfSent') == 'true',
-    notFiles: localStorage.getItem('notFiles') == 'true',
+    //enableKBShortcuts: localStorage.getItem('enableKBShortcuts') != 'false',
+    //onlySelfSent: localStorage.getItem('onlySelfSent') == 'true',
+    //notFiles: localStorage.getItem('notFiles') == 'true',
     lockedPushes: JSON.parse(localStorage.getItem('lockedPushes') || '[]')
 };
 
 pushes = {
-    list: [], checkedList: [], checkedIDs: [],
+    list: [], checkedList: [], lockedList: [],
+
     checkmark: chrome.runtime.getURL('img/checkmark.png'),
-    lockButtonTemplate: (function(lbt) {
-        lbt = document.createElement('i');
+
+    lockButtonTemplate: (function() {
+        var lbt = document.createElement('i');
         lbt.className = 'push-lock pointer';
         return lbt;
     })(),
@@ -62,15 +52,12 @@ pushes = {
     getLockButton: function(push) {
         return push.getElementsByClassName('push-lock')[0];
     },
-
     getShareButton: function(push) {
         return push.getElementsByClassName('push-share')[0];
     },
-
     getCloseButton: function(push) {
         return push.getElementsByClassName('push-close')[0];
     },
-
     getCheckbox: function(push) {
         return push.getElementsByClassName('profile-pic')[0];
     },
@@ -78,7 +65,7 @@ pushes = {
     toggleLock: function(push, lock, initial) {
         pushes.check(push, false, true);
 
-        lock = push.classList.toggle('locked', lock);
+        push.classList.toggle('locked', lock);
 
         var
             lockButton = pushes.getLockButton(push),
@@ -105,60 +92,59 @@ pushes = {
             lockButton.setAttribute('title', 'Click to lock this push from being deleted.');
         }
 
+        localStorage.setItem('lockedPushes', JSON.stringify(options.lockedPushes));
+
         if (!initial) {
             pushes.refresh();
         }
-
-        localStorage.setItem('lockedPushes', JSON.stringify(options.lockedPushes));
     },
 
-    refresh: function(deselect, partial, isMutation) {
-        isMutation = (isMutation && pushes.checkedIDs.length);
+    updateList: function() {
+        return (pushes.list = main.pushListDiv.getElementsByClassName('push'));
+    },
+    updateCheckedList: function() {
+        pushes.checkedList = main.pushListDiv.getElementsByClassName('push checked');
+    },
+    updateLockedList: function() {
+        pushes.lockedList = main.pushListDiv.getElementsByClassName('push locked');
+    },
+    updateAllLists: function() {
+        if (pushes.updateList().length) {
+            pushes.updateCheckedList();
+            pushes.updateLockedList();
+        } else {
+            pushes.checkedList = [];
+            pushes.lockedList = [];
+            if (!window.location.search) {
+                options.lockedPushes = [];
+            }
+        }
+    },
+
+    refresh: function(deselect, partial) {
+        if (isProcessing) { return; }
 
         setProcessing('refresh', true);
+        log('refreshing');
 
         try {
-            pushes.list = document.getElementsByClassName('push');
+            pushes.updateAllLists();
 
             if (!partial) {
-                pushes.checkedList = document.getElementsByClassName('push checked');
-
-                var push, shouldCheck;
-
-                log('refreshing');
-
-                for (var p = 0, le = pushes.list.length; p < le; p++) {
+                for (var push, p = 0, le = pushes.list.length; p < le; p++) {
                     push = pushes.list[p];
                     pushes.initialize(push);
 
-                    if (isMutation) {
-                        shouldCheck = (pushes.checkedIDs.indexOf(push.id) !== -1);
-
-                        if (shouldCheck !== push.classList.contains('checked')) {
-                            pushes.check(push, shouldCheck);
-                        }
-                    }
-                }
-
-                if (isMutation) {
-                    for (var l = pushes.checkedIDs.length - 1; l >= 0; --p) {
-                        if (!document.getElementById(pushes.checkedIDs[l])) {
-                            pushes.checkedIDs.splice(l, 1);
-                        }
+                    if (deselect) {
+                        pushes.check(push, false, true);
                     }
                 }
             }
-
-            if (deselect) {
-                pushes.deselectAll();
-            }
-
-            pushes.getcurrentLocked();
-
-            buttons.update();
         } catch (exce) {
-            console.log(exce);
+            log(exce);
         } finally {
+            buttons.update();
+
             setProcessing('refresh', false);
         }
     },
@@ -187,7 +173,7 @@ pushes = {
     },
 
     getHighlit: function() {
-        return document.getElementsByClassName('highlit');
+        return main.pushListDiv.getElementsByClassName('highlit');
     },
 
     highlight: function(push, hl) {
@@ -221,8 +207,7 @@ pushes = {
 
         var
             thumbnail,
-            cBox = pushes.getCheckbox(push),
-            indx = pushes.checkedIDs.indexOf(push.id)
+            cBox = pushes.getCheckbox(push)
         ;
 
         if (check) {
@@ -231,10 +216,6 @@ pushes = {
             cBox.setAttribute('src', pushes.checkmark);
 
             cBox.setAttribute('title', 'Click to save this push from certain doom.');
-
-            if (indx === -1) {
-                pushes.checkedIDs.push(push);
-            }
 
             cBox.setAttribute('data-prevsrc', thumbnail);
         } else {
@@ -246,10 +227,6 @@ pushes = {
             }
 
             cBox.setAttribute('title', 'Click to mark this push for destruction.');
-
-            if (indx !== -1) {
-                pushes.checkedIDs.splice(indx, 1);
-            }
         }
     },
 
@@ -259,17 +236,6 @@ pushes = {
         }
 
         pushes.refresh();
-    },
-
-    deselectAll: function() {
-        pushes.doSelect(false);
-    },
-
-    currentLocked: [],
-
-    getcurrentLocked: function() {
-        pushes.currentLocked = document.getElementsByClassName('push locked');
-        return;
     },
 
     pDelete: function(all) {
@@ -282,52 +248,48 @@ pushes = {
 
             setProcessing('dodelete', true);
 
-            pushes.getcurrentLocked();
+            try {
+                var toDel = all ? pushes.list : pushes.checkedList,
+                    len = toDel.length - (all ? pushes.lockedList.length : 0);
 
-            var toDel = all ? pushes.list : pushes.checkedList,
-                len = toDel.length - (all ? pushes.currentLocked.length : 0);
-
-            if (len > 0) {
-                if (initial && len > 5) {
-                    if (!confirm('Are you sure you would like to delete ' +
-                                    (all ? 'all %+' : 'these %').replace('%', len) + ' pushes?\n\n' +
-                                 'This cannot be canceled nor undone.')) {
+                if (len > 0) {
+                    if (initial && len > 5 && !confirm(
+                            'Are you sure you would like to delete ' +
+                            (all ? 'all %' : 'these %').replace('%', len + (all && len === 50 ? '+' : '')) + ' pushes?\n\n' +
+                            'This cannot be canceled nor undone.')
+                        ) {
                         setProcessing('dodelete', false);
+                        return;
+                    }
+
+                    for (var push, i = toDel.length - 1; i >= 0; i--) {
+                        push = toDel[i];
+
+                        if (push.classList.contains('locked') || options.lockedPushes.indexOf(push.id) !== -1) { /*Need a way to make sure it's not going to get deleted*/
+                            continue;
+                        }
+
+                        pushes.getCloseButton(push).click();
+
+                        deleteCounter++;
+                    }
+
+                    if (all) {
+                        window.setTimeout(doDelete, 500);
+
                         return;
                     }
                 }
 
-                var push;
-
-                for (var i = toDel.length - 1; i >= 0; i--) {
-                    push = toDel[i];
-
-                    if (push.classList.contains('locked')) { /*Need a way to make sure it's not going to get deleted*/
-                        continue;
-                    }
-
-                    pushes.getCloseButton(push).click();
-
-                    deleteCounter++;
-                }
-
-                if (all) {
-                    window.setTimeout(doDelete, 500, false);
-
-                    return;
-                }
+                log('Deletion complete. Deleted ' + deleteCounter + ' pushes.');
+            } catch (ex) {
+                log('Deletion failed. Error: ', ex);
             }
-
-            log('Deletion complete. Deleted ' + deleteCounter + ' pushes.');
 
             setProcessing('dodelete', false);
         };
 
         doDelete(true);
-    },
-
-    deleteSelected: function() {
-        pushes.pDelete(false);
     }
 };
 
@@ -356,9 +318,6 @@ buttons = {
         buttonsDiv.id = 'pushbully-box';
         buttonsDiv.className = 'roundbottom';
 
-        log('buttonsDiv:');
-        log(buttonsDiv);
-
         //BUTTONS
         var btnTemplate = document.createElement('button'),
             btnRefreshBoxes;
@@ -368,30 +327,37 @@ buttons = {
         buttons.selectAll = btnTemplate.cloneNode();
         buttons.selectAll.innerText = 'Select All';
         buttons.selectAll.id = 'select-all-button';
-        buttonsDiv.appendChild(buttons.selectAll);
 
         //Delete selected button
         buttons.deleteSelected = btnTemplate.cloneNode();
         buttons.deleteSelected.innerText = 'Delete Selected';
         buttons.deleteSelected.id = 'delete-selected-button';
         buttons.deleteSelected.title = 'Click to delete all selected pushes.';
-        buttons.deleteSelected.onclick = pushes.deleteSelected;
-        buttonsDiv.appendChild(buttons.deleteSelected);
+        buttons.deleteSelected.onclick = function() {
+            pushes.pDelete(false);
+        };
 
         //Refresh boxes button
         btnRefreshBoxes = btnTemplate.cloneNode();
         btnRefreshBoxes.innerText = 'Refresh Boxes';
         btnRefreshBoxes.id = 'refresh-boxes-button';
         btnRefreshBoxes.title = 'Sometimes pushes won\'t have checkboxes on them. Click this to fix that.';
-        btnRefreshBoxes.onclick = pushes.refresh; //Sends event as first parameter; means the first paramater is true
-        buttonsDiv.appendChild(btnRefreshBoxes);
+        btnRefreshBoxes.onclick = function() {
+            pushes.refresh(true);
+        };
 
         //Delete all pushes button
         buttons.deleteAll = btnTemplate.cloneNode();
         buttons.deleteAll.innerText = 'Delete All';
         buttons.deleteAll.id = 'delete-all-button';
         buttons.deleteAll.title = 'Click to delete all of your pushes, starting from the current page on.';
-        buttons.deleteAll.onclick = pushes.pDelete; //Sends event as first parameter; means the first paramater is true
+        buttons.deleteAll.onclick = function() {
+            pushes.pDelete(true);
+        };
+
+        buttonsDiv.appendChild(buttons.selectAll);
+        buttonsDiv.appendChild(buttons.deleteSelected);
+        buttonsDiv.appendChild(btnRefreshBoxes);
         buttonsDiv.appendChild(buttons.deleteAll);
 
         main.pushListDiv.insertAdjacentElement('beforeBegin', buttonsDiv);
@@ -402,7 +368,7 @@ buttons = {
     },
 
     update: function() {
-        var allLength = pushes.list.length - pushes.currentLocked.length;
+        var allLength = pushes.list.length - pushes.lockedList.length;
 
         if (allLength && pushes.checkedList.length) {
             buttons.deleteSelected.innerText = 'Delete Selected (' + pushes.checkedList.length + ')';
@@ -410,14 +376,22 @@ buttons = {
             buttons.selectAll.innerText = 'Deselect All';
             buttons.selectAll.title = 'Click to deselect all selected pushes.';
 
-            buttons.selectAll.onclick = pushes.deselectAll;
+            buttons.selectAll.onclick = function() {
+                if (buttons.selectAll.disabled) { return; }
+
+                pushes.doSelect(false);
+            };
         } else {
             buttons.deleteSelected.innerText = 'Delete Selected';
 
             buttons.selectAll.innerText = 'Select All' + (allLength ? ' (' + allLength + ')' : '');
             buttons.selectAll.title = 'Click to select all pushes on the current page.';
 
-            buttons.selectAll.onclick = pushes.doSelect;
+            buttons.selectAll.onclick = function() {
+                if (buttons.selectAll.disabled) { return; }
+
+                pushes.doSelect(true);
+            };
         }
 
         buttons.selectAll.disabled = buttons.deleteAll.disabled = !allLength;
@@ -441,7 +415,7 @@ main = {
             }
         }
 
-        if (i !== null) { return; }
+        if (i) { return; }
 
         if (elem.classList.contains('profile-pic')) {
             log('profile-pic was clicked');
@@ -457,13 +431,14 @@ main = {
             if (i !== -1) {
                 options.lockedPushes.splice(i, 1);
             }
+
+            pushes.refresh(true);
         } else if (elem.classList.contains('push-lock')) {
             log('push-lock was clicked');
 
             pushes.toggleLock(push, !push.classList.contains('locked')); /*Don't refresh here, toggleLock refreshes*/
         } else {
             log('something else was clicked - push:');
-            log(push);
 
             pushes.highlight(push, !push.classList.contains('highlit'));
         }
@@ -475,17 +450,12 @@ main = {
         try {
             main.pushListDiv = document.getElementsByClassName('push_cards')[0];
 
-            if (!main.pushListDiv) {
+            if (!main.pushListDiv
+                || !buttons.inject()) {
                 return false;
             }
 
             main.pushListDiv.onclick = main.pushListClick;
-
-            if (!buttons.inject()) {
-                return false;
-            }
-
-            pushes.refresh();
 
             try {
                 if (main.observer) {
@@ -505,22 +475,16 @@ main = {
                         return;
                     }
 
+                    // alert('mutation fired');
+
                     if (timeout) {
                         window.clearTimeout(timeout);
                     }
 
-                    timeout = window.setTimeout(function() {
-                        pushes.refresh(false, false, true);
-                    }, 700);
+                    timeout = window.setTimeout(pushes.refresh, 700);
                 });
 
-                main.observer.observe(
-                    main.pushListDiv,
-                    {
-                        childList: true,
-                        subtree: true
-                    }
-                );
+                main.observer.observe(main.pushListDiv, { childList: true });
 
                 log('Initialize: Attached mutation observer to listen for new pushes.');
 
@@ -533,6 +497,8 @@ main = {
         } catch (ex) {
             log(ex);
         } finally {
+            window.setTimeout(pushes.refresh, 1000);
+
             setProcessing('doreset', false);
         }
     },
@@ -547,63 +513,48 @@ main = {
 
     handleKeyDown: function(event) {
         if (event.keyCode === 27) {
-            return pushes.highlight(); /*Clears highlighted pushes*/
+            pushes.highlight(); /*Clears highlighted pushes*/
+            return;
         }
 
-        var highlit = pushes.getHighlit()[0];
+        var highlit = pushes.getHighlit()[0] || pushes.list[0];
 
-        if (event.ctrlKey && event.shiftKey) {
-            switch (event.keyCode) {
-                case 65: /*A key*/
-                    if (!buttons.selectAll.disabled) {
-                        buttons.selectAll.onclick();
-                    }
+        if (event.ctrlKey) {
+            if (event.shiftKey && event.keycode === 65 /*A key*/) {
+                buttons.selectAll.onclick();
+            } else {
+                switch (event.keyCode) {
+                    case 36: /*Home key*/
+                        pushes.highlight(pushes.list[0]);
 
-                    return;
-            }
-        }
-        else if (event.ctrlKey) {
-            switch (event.keyCode) {
-                case 36: /*Home key*/
-                    pushes.highlight(pushes.list.firstChild);
+                        return;
 
-                    return;
+                    case 35: /*End key*/
+                        pushes.highlight(pushes.list[pushes.list.length - 1]);
 
-                case 35: /*End key*/
-                    pushes.highlight(pushes.list.lastChild);
+                        return;
 
-                    return;
+                    case 13: /*Enter key*/
+                        if (highlit) {
+                            pushes.check(push, !highlit.classList.contains('checked'));
+                        }
 
-                case 13: /*Enter key*/
-                    if (highlit) {
-                        pushes.check(push, !highlit.classList.contains('checked'));
-                    }
-
-                    return;
+                        return;
+                }
             }
         } else if (event.keyCode === 40 || event.keyCode === 38) {
-            if (event.keycode === 40) { /*Down arrow key*/
-                highlit = highlit ? highlit.nextSibling : pushes.list.firstChild;
-            } else {
-                highlit = highlit ? highlit.previousSibling : pushes.list.lastChild;
-            }
+            highlit = event.keycode === 40 ? highlit.nextSibling : highlit.previousSibling;
 
             pushes.highlight(highlit);
         }
-    },
-
-    initialize: function() {
-        if (!main.reset()) {
-            log('Did not reset. Canceling');
-
-            return false;
-        }
-
-        main.pushListDiv.onkeydown = main.handleKeyDown;
     }
 };
 
-main.initialize();
+if (main.reset()) {
+    main.pushListDiv.addEventListener('keydown', main.handleKeyDown, true);
+} else {
+    log('Did not reset. Canceling');
+}
 
 //TODO: Create options page (add ALL the advanced mo'fo'in' options)
 
