@@ -1,0 +1,137 @@
+﻿@charset 'UTF-8';
+
+/*unlock: "\f09c" | fa-lock: "\f023"*/
+
+#pushbully-box {
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+    margin: 0 0 10px 0;
+    float: right;
+    clear: both;
+    width: 100%;
+    height: auto;
+    display: flex;
+    justify-content: space-between;
+}
+
+#pushbully-settings {
+    display: none;
+    position: relative;
+    margin-bottom: 10px;
+    background: white;
+    font-size: 18px;
+    overflow: hidden;
+    min-height: 60px;
+    border-radius: 0 0 6px;
+    border: 1px solid #ced1d5;
+}
+
+/*#region buttons*/
+
+.pushbully-button {
+    padding: 5px 9px !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    flex-grow: 1 !important;
+}
+
+    .pushbully-button:disabled {
+        cursor: auto !important;
+    }
+
+#select-visible-button {
+    min-width: 111px !important;
+}
+
+    #select-visible-button:enabled:-webkit-any(:hover, :active, :focus) {
+        background-color: #9B59B6 !important;
+    }
+
+#delete-selected-button {
+    min-width: 154px !important;
+}
+
+    #delete-selected-button:enabled:-webkit-any(:hover, :active, :focus) {
+        background-color: #E67E22 !important;
+    }
+
+#refresh-boxes-button:enabled:-webkit-any(:hover, :active, :focus) {
+    background-color: #3498DB !important;
+}
+
+#delete-all-button:enabled:-webkit-any(:hover, :active, :focus) {
+    background-color: #E74C3C !important;
+}
+
+/*#endregion*/
+
+/*#region pushes*/
+
+.push {
+    outline: 5px inset transparent !important;
+}
+
+    .push.highlit .inner-panel {
+        outline-color: #59ab46 !important;
+    }
+
+    .push .push-lock {
+        color: #ced1d5 !important;
+        margin: 15px 6px 0 10px !important;
+        float: right !important;
+        font-family: FontAwesome !important;
+    }
+
+        .push .push-lock:before {
+            content: "\f09c" !important;
+        }
+
+    .push.locked {
+        border-color: gold !important;
+    }
+
+        .push.locked .push-close,
+        .push.locked .push-close:hover {
+            color: transparent !important;
+            cursor: auto !important;
+        }
+
+        .push .push-lock:hover,
+        .push.locked .push-lock {
+            color: gold !important;
+        }
+
+            .push.locked .push-lock::before {
+                content: "\f023" !important;
+            }
+
+    .push.checked {
+        background-color: #fae6e4 !important;
+    }
+
+        .push.checked.gradient .inner-panel {
+            background: linear-gradient(to bottom, rgba(250, 230, 228, 0.80) 0, rgba(0, 0, 0, 0) 100%) !important;
+        }
+
+    .push .profile-pic {
+        -webkit-touch-callout: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+    }
+
+    .push:not(.locked) .profile-pic {
+        cursor: pointer !important;
+    }
+/*#endregion*/
+
+.push_cards {
+    clear: both !important;
+}
+
+.pushframe {
+    margin-bottom: 12px !important;
+}
